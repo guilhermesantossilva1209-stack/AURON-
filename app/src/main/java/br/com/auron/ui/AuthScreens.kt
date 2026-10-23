@@ -64,6 +64,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import br.com.auron.auth.AuthPolicies
 import br.com.auron.auth.AuthState
 import br.com.auron.auth.ConnectionConfig
 import br.com.auron.ui.theme.AuronColors

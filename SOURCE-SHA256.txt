@@ -42,7 +42,7 @@ ab347d2d2c52966e83152a3295ce21474b28f87d41224adf82bc0f6f5e0ef531  app/src/main/j
 f09306fd2b6bd77d5639f6b6b91116a504224b095ece85806b973416259d7d06  app/src/main/java/br/com/auron/ui/AuronApp.kt
 d8353cdf01234294efbdfab91dcad6c2771a24e5e9a27692a3516a0621eec538  app/src/main/java/br/com/auron/ui/AuronRobot.kt
 93d4dc0792932ef6bac0b38ab16d763cd70124b865ab283bd26c16295de72cfa  app/src/main/java/br/com/auron/ui/AuronViewModel.kt
-615be348885cd58a0a5c4eda8671b55e3a61de742df880afaf7620466d4abe05  app/src/main/java/br/com/auron/ui/AuthScreens.kt
+2c90eb5229bd6e3692304af70421d6378107ae4038a525dbf24017e6ae299c96  app/src/main/java/br/com/auron/ui/AuthScreens.kt
 78a96328614d1882b1efe68a2ca22b8536136c6f552a166d9b4a40f0e3f47ff6  app/src/main/java/br/com/auron/ui/BibleReadingSheet.kt
 b2e4050f82a30b0136c1c1962dab3e0ac728d7533e9751f753a92b2ff42682a9  app/src/main/java/br/com/auron/ui/ChatScreen.kt
 16a10594ef2ea1f2074e8739f394ec5a6eca54739f7426c252cb0dbdd446a81d  app/src/main/java/br/com/auron/ui/CloudBackupScreen.kt
