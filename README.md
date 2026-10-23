@@ -2,8 +2,10 @@
 
 Continuação do aplicativo Android existente, com o mesmo pacote **br.com.auron**,
 Android 8.0+ (API26), versionCode3 e versionName0.2.1. A versão anterior instalada
-foi testada pelo usuário. **Esta atualização ainda não foi compilada nem executada
-em Android neste ambiente; não há APK novo validado.** Veja [resultados](docs/VALIDATION.md).
+foi testada pelo usuário. **Esta atualização compilou no GitHub Actions em
+23/10/2026: 72 testes JVM aprovados e lint sem erros.** O APK debug de validação
+foi gerado; sua assinatura ainda não foi comparada com a instalação atual.
+Veja [resultados e pendências](docs/VALIDATION.md).
 
 ## Implementação nesta versão
 
@@ -51,7 +53,7 @@ app/src/main/java/br/com/auron/
   ui/              central, cadastro/login, memória, leitura, robô e tema
   voice/           voz por toque e TTS existentes
 app/src/main/assets/bible_daily.json
-app/src/test/      testes JVM (não executados aqui)
+app/src/test/      72 testes JVM aprovados no CI
 app/src/androidTest/ testes de dados, sessão e UI (não executados aqui)
 server/            gateway Node opcional, sem dependências npm
 supabase/          migração, configuração do proprietário e testes SQL descartáveis
@@ -65,7 +67,7 @@ docs/recovery/     página HTTPS de recuperação a ser configurada/hospedada
 
 ## Compilar e atualizar
 
-Use JDK17, Gradle8.10.2 e Android SDK plataforma35/Build Tools35.0.0:
+Use JDK17, Gradle8.10.2 e Android SDK plataforma35/Build Tools34.0.0:
 
 ```bash
 gradle --no-daemon testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest
@@ -80,7 +82,8 @@ instalação Gradle8.10.2 já disponível.
 
 Só com tablet, use o mesmo repositório no GitHub e o workflow **Android — compilar
 e verificar**. O ZIP-fonte precisa ser extraído no repositório, preservando pastas.
-Um ZIP sozinho não fornece os arquivos necessários ao Actions.
+Um ZIP sozinho não fornece os arquivos necessários ao Actions. O fonte atualizado
+já foi publicado no [repositório autorizado](https://github.com/guilhermesantossilva1209-stack/AURON-).
 
 **Não desinstale a versão atual.** Para atualizar preservando dados, o APK deve
 ter o mesmo pacote e certificado de assinatura. Um novo APK debug gerado em outro
@@ -101,8 +104,10 @@ com fixtures e 4 de política de recuperação. Esses resultados não comprovam
 compilação Kotlin, acesso real ao Supabase, envio de e-mail ou inferência real.
 [Validação e bloqueios](docs/VALIDATION.md) · [Como retomar](docs/RESUME.md)
 
-O CI inclui PostgreSQL 16 descartável para validar RLS/migração antes do build.
-Os testes Kotlin, Android e PostgreSQL ainda não foram executados aqui.
+O [CI aprovado](https://github.com/guilhermesantossilva1209-stack/AURON-/actions/runs/39996099432)
+validou PostgreSQL16/RLS, os 50 testes Node, 72 testes JVM, lint e compilação dos
+APKs. Os 36 testes instrumentados foram compilados, mas ainda não executados.
+Não houve teste físico no tablet nem autenticação contra o Supabase real nesta rodada.
 [Relatório desta entrega](docs/DELIVERY-0.2.1.md) · [Build Android16](docs/BUILD-0.2.1.md)
 
 ## Comandos locais preservados

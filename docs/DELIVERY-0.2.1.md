@@ -1,4 +1,20 @@
-# Entrega AURON 0.2.1 — 22/10/2026
+# Entrega AURON 0.2.1
+
+## Atualização verificada — 23/10/2026
+
+O código foi publicado no repositório autorizado. Foram corrigidos somente bloqueios
+de compilação: pacote SDK descontinuado, importação AuthPolicies, tema com atributo
+restrito a API27+ e falso positivo do lint no carregamento assíncrono da abertura.
+O [CI final](https://github.com/guilhermesantossilva1209-stack/AURON-/actions/runs/39996099432)
+passou: 72 testes JVM, 50 Node, verificações Python e SQL/RLS; lint sem erros.
+APK debug disponível no artefato `AURON-APK-e-relatorios`. Instrumentação e tablet
+físico não executados. Atualização sobre a instalação existente depende da chave
+original, ainda ausente. [Resultados completos](VALIDATION.md).
+
+## Histórico da entrega local — 22/10/2026
+
+O texto abaixo registra o estado anterior à compilação remota; os resultados acima
+e em VALIDATION.md substituem os bloqueios de CI descritos neste histórico.
 
 Esta entrega continua o aplicativo existente, pacote br.com.auron, versionCode3.
 **O código está integrado, mas não existe APK novo compilado ou validação Android

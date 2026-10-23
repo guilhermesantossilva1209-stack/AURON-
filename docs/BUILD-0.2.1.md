@@ -1,11 +1,25 @@
 # Compilação e atualização 0.2.1
 
+## Resultado atualizado — 23/10/2026
+
+O [workflow 39996099432](https://github.com/guilhermesantossilva1209-stack/AURON-/actions/runs/39996099432)
+passou no commit `9f2f34e728b54de543769eb38591edc1a1fcee34`. Compilação Kotlin/KSP,
+72 testes JVM, lint (zero erros, 17 avisos) e geração dos APKs passaram. O artefato
+`AURON-APK-e-relatorios` contém `outputs/apk/debug/app-debug.apk` e relatórios.
+O job de emulador não foi executado; compilar o APK de testes não executa seus casos.
+
+É um APK debug de validação, assinado pelo CI. Não foi gerado release com a chave
+original. O usuário informou que a instalação atual veio do Android Studio ou
+outro compilador; é necessário recuperar/reutilizar a chave desse ambiente.
+Não há confirmação de compatibilidade de assinatura nem autorização para substituí-la.
+Veja [validação](VALIDATION.md) e [atualização segura](UPGRADE-0.2.md).
+
 Esta revisão mantém o aplicativo `br.com.auron`, usa `versionCode = 3` e
 `versionName = "0.2.1"`. É uma atualização da família AURON 0.2. Não há mudança
 de identificador, chave de assinatura, versão do banco Room ou estratégia de
 migração nesta preparação de compilação.
 
-## Estado verificado neste ambiente
+## Histórico do ambiente local — 22/10/2026
 
 Em 22/10/2026 foi encontrada a JVM OpenJDK 21.0.12.1. Não foram encontrados os
 executáveis Gradle, `kotlinc`, `sdkmanager` ou `adb`, nem um Android SDK instalado
@@ -42,8 +56,8 @@ PostgreSQL 16 descartável. Esse trabalho aplica a migração duas vezes e execu
 os testes de proprietário, RLS e controle de revisão de
 `supabase/tests/checks.sql`. A compilação depende do sucesso desse trabalho.
 Os valores de conexão definidos no workflow pertencem somente ao banco de teste
-efêmero; não são credenciais do projeto Supabase pessoal. Esse job foi preparado
-e seu YAML foi analisado, mas não foi executado nesta máquina nem no GitHub.
+efêmero; não são credenciais do projeto Supabase pessoal. Esse job passou no GitHub
+em 23/10/2026; o PostgreSQL continua indisponível nesta máquina local.
 Ele não substitui o teste de configuração do Auth Hook no projeto Supabase real.
 
 O projeto mantém Kotlin 2.0.21, AGP 8.7.3, Gradle 8.10.2, Java 17 para os
@@ -77,7 +91,7 @@ permissões e autenticação no tablet Lenovo.
 
 O workflow usa ferramentas gratuitas. GitHub Actions/Codespaces pode consumir
 a franquia da conta; não é necessário contratar plano ou habilitar cobrança
-automaticamente. Nenhum workflow remoto foi executado nesta revisão local.
+automaticamente. A execução remota aprovada está vinculada no início deste documento.
 
 ## Comandos em ambiente com as ferramentas instaladas
 

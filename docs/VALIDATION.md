@@ -1,71 +1,74 @@
-# Validação AURON 0.2.1 — 22/10/2026
+# Validação AURON 0.2.1 — 23/10/2026
 
-O fonte foi integrado e revisado; **não houve compilação Kotlin nem execução
-Android nesta máquina**. Nenhum resultado abaixo equivale a login Supabase,
-RLS hospedada, áudio ou teste físico do Lenovo TB336FU.
+**A compilação e os testes do CI foram aprovados no GitHub Actions.** Isso não
+equivale a teste físico no Lenovo TB336FU, validação do Supabase real ou confirmação
+da assinatura necessária para atualizar o aplicativo instalado.
 
-## Executado e aprovado
+## Evidências do CI
 
-| Comando/verificação | Resultado | Evidência |
-|---|---|---|
-| python3 scripts/check-source.py | 9/9 estáticas | [JSON](static-checks.json) |
-| python3 scripts/verify-offline.py | 3/3 SQLite e ativos | [Log](verification/sql-assets-final.txt) |
-| node server/test/handler.test.mjs | 26/26 handler com fixtures | [Log](verification/server-handler-final.txt) |
-| node docs/recovery/test/policy.test.mjs | 4/4 políticas de recuperação | [Log](verification/recovery-policy-final.txt) |
-| node --check server/server.mjs e docs/recovery/recovery.mjs | Sintaxe aprovada | Execução local |
-| sh -n scripts/create-wrapper.sh | Sintaxe aprovada | Execução local |
-| Leitura YAML + conferência dos caminhos/jobs SQL | Aprovada | Execução Python/PyYAML |
-| Preservação da referência oficial | SHA-256 igual ao original recebido | [Abertura](ANIMATION.md) |
-| Comparação com snapshot anterior à etapa atual | Catálogo/seletor/tela de rotina/repositório sem mudanças | Comparação byte a byte |
+- [Execução aprovada 39996099432](https://github.com/guilhermesantossilva1209-stack/AURON-/actions/runs/39996099432).
+- Commit validado: `9f2f34e728b54de543769eb38591edc1a1fcee34`.
+- [Artefato APK e relatórios 12520066542](https://github.com/guilhermesantossilva1209-stack/AURON-/actions/runs/39996099432/artifacts/12520066542).
+- Comando Android: `gradle --no-daemon testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest`.
 
-Os testes SQLite executam as instruções de migração extraídas do fonte contra
-fixtures legadas e verificam preservação dos registros. Não executam Room,
-Android Keystore ou PostgreSQL. Os testes Node usam identidades/provedores
-controlados; não chamam o projeto AURON-0.2 nem um modelo real.
+| Verificação executada | Resultado |
+|---|---|
+| python3 scripts/check-source.py | 9/9 verificações estáticas aprovadas |
+| python3 scripts/verify-offline.py | 3/3 testes SQLite e ativos aprovados |
+| node server/test/handler.test.mjs | 26/26 aprovados |
+| node server/test/server.test.mjs | 20/20 aprovados no CI |
+| node docs/recovery/test/policy.test.mjs | 4/4 aprovados |
+| PostgreSQL16 descartável: migração idempotente e ensaios RLS | Aprovados |
+| Testes JVM | 72 executados, 0 falhas, 0 ignorados |
+| Android Lint | 0 erros, 17 avisos |
+| APK debug e APK de testes instrumentados | Compilados |
 
-## Falhas e bloqueios efetivamente observados
+Os testes Node usam identidades e provedores controlados. Os ensaios PostgreSQL
+validam scripts em banco descartável, não o projeto Supabase AURON 0.2. Os testes
+SQLite verificam a preservação dos registros legados pela migração; não executam
+Room ou Android Keystore em um dispositivo.
 
-- `gradle --no-daemon testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest`
-  encerrou com código 127: **gradle: command not found**. Gradle, kotlinc, SDK,
-  sdkmanager e ADB ausentes; Java21 presente. Não há APK gerado nem resultado de Lint.
-- A sondagem curta à distribuição Gradle falhou no proxy. Uma tentativa de permissão
-  adicional terminou abortada antes de executar o comando; não há aprovação ou
-  resultado de rede a presumir. Não foram repetidos ciclos de instalação.
-- `node server/test/server.test.mjs`: **20 casos bloqueados** em
-  `listen EPERM 127.0.0.1`, antes dos cenários HTTP. [Log](verification/server-http-final.txt).
-  São falhas de infraestrutura, não passes.
-- PostgreSQL/psql ausentes, Docker sem acesso ao socket. SQL/RLS não executados aqui.
-- Sem acesso administrativo ao Supabase, credenciais públicas preenchidas, SMTP,
-  página publicada, emulador ou tablet conectado.
+## APK disponível para validação
 
-## Escritos, mas não executados
+Arquivo local: `/workspace/library-files/AURON-0.2.1-validacao-debug.apk`.
+Tamanho: **17.953.065 bytes**.
 
-A contagem atual em static-checks.json é **72 testes JVM e 36 instrumentados**.
-Incluem autenticação, perfil/sessão, memória, persistência, consentimento de cópia,
-voz e enquadramento da câmera. Existem ainda os ensaios SQL em
-[supabase/tests](../supabase/tests/README.md).
+SHA-256: `6f73fbc24dcc9589e43f92c625a1f308b80eddd3d68c3b885db834e34f73d658`.
 
-O workflow prepara PostgreSQL16 descartável, aplica a migração duas vezes e
-verifica proprietário/anon/outro usuário, confirmação, RLS, permissões e revisões.
-Só depois libera o build Android. Este workflow **não foi executado remotamente**.
-A correção do nome do banco de teste e o uso de pipefail foram revisados no YAML;
-a execução SQL permanece pendente.
+O APK usa a assinatura debug do CI. **A compatibilidade de atualização sobre a
+instalação atual ainda não foi validada.** O usuário informou que o APK original
+foi gerado em Android Studio ou outro compilador; a chave original não está
+disponível aqui. Não desinstalar o aplicativo nem limpar seus dados para contornar
+uma assinatura incompatível.
 
-O emulador opcional usa Android16/API36. O teste de movimento ignora a execução
-quando as animações Android estão desativadas; habilitá-las é necessário para
-validar os quadros da abertura. O código usa compile/target35 e min26, sem
-alteração de applicationId ou schema Room nesta etapa.
+## Histórico dos bloqueios locais
 
-## Aceitação externa necessária
+Antes do CI, Gradle/SDK/kotlinc/ADB estavam ausentes neste ambiente e o build local
+terminou com `gradle: command not found`. A rede pelo terminal e o socket Docker
+também apresentaram bloqueios. Os 20 testes HTTP falharam localmente em
+`listen EPERM 127.0.0.1`; **posteriormente passaram no GitHub Actions**.
+Os logs em [verification](verification/) e [static-checks.json](static-checks.json)
+registram a validação local anterior; os resultados atuais são os do CI acima.
 
-1. CI: SQL, compilação Kotlin/KSP, JVM, Lint e instrumentação.
-2. Supabase real: aplicar scripts, ativar Hook, criar/confirmar proprietário,
-   testar bloqueio de outros e-mails, login/recuperação/logout e dados RLS.
-3. Tablet: atualização com assinatura original, registros antigos, câmera completa,
-   voz offline instalada, configurações persistidas e falhas de rede.
-4. Confirmar que fonte antigo e novo usam a mesma assinatura: não houve acesso à
-   chave privada ou ao certificado da instalação atual.
+As correções de compilação preservaram as rotinas, o catálogo e seletor dos
+versículos, a persistência, `br.com.auron`, `versionCode=3`, `versionName=0.2.1`
+e Room2. A referência visual oficial foi preservada.
 
-Limitações de produto: cópia remota manual sem restauração/sincronização; voz
-masculina depende das opções do dispositivo; animação é câmera sobre imagem 2D.
-Nada disso foi apresentado como integração real testada em produção.
+## Ainda não testado ou dependente de configuração
+
+1. **36 testes instrumentados:** o APK de testes compilou, mas os testes não
+   foram executados. O workflow permite emulador Android16/API36. Para testar os
+   quadros da abertura, habilitar animações Android; o teste de movimento é
+   ignorado quando elas estão desativadas.
+2. **Supabase real:** aplicar/verificar scripts, allowlist e Auth Hook; validar
+   cadastro e confirmação do proprietário, login, recuperação, sessão, logout e
+   RLS. Configurar a página HTTPS de recuperação e o envio de e-mails conforme
+   [AUTH-SETUP.md](AUTH-SETUP.md).
+3. **Instalação segura:** comparar pacote, versão e certificado da instalação
+   atual e gerar o APK com a chave original antes de recomendar a atualização.
+4. **Tablet físico:** testar preservação dos registros, navegação, abertura, voz
+   offline instalada, preferências persistidas e comportamento sem rede.
+
+Limitações de produto permanecem: cópia remota manual sem restauração ou
+sincronização; voz masculina depende das opções do dispositivo; abertura usa
+movimento de câmera sobre imagem 2D. Nenhum serviço real de IA foi validado no CI.

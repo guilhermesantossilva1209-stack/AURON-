@@ -1,46 +1,70 @@
 # Retomar a entrega AURON 0.2.1
 
-Fonte atual: /workspace/auron. Esta revisão continua o pacote br.com.auron;
-versionCode3, versionName0.2.1, Room2. Não reiniciar nem copiar uma base antiga
-sobre estes arquivos. Cópias preservadas: /workspace/auron-preserved-0.2-before-0.2.1
-e /workspace/auron-preserved-2026-10-22.
+Fonte atual: `/workspace/auron`. Aplicativo `br.com.auron`, `versionCode=3`,
+`versionName=0.2.1`, Room2, Android mínimo26 e compile/target35. Não reiniciar o
+projeto nem substituir estes arquivos por uma cópia antiga. Snapshots preservados:
+`/workspace/auron-preserved-0.2-before-0.2.1` e
+`/workspace/auron-preserved-2026-10-22`.
 
-## Implementação integrada
+## Estado confirmado em 23/10/2026
 
-- Supabase Auth: criação inicial com confirmação de senha, política de proprietário,
-  login, recuperação, sessão Keystore e logout; perfil local preservado e explícito.
-- SQL Supabase: allowlist administrativa de um e-mail, Hook de cadastro, RLS,
-  RPCs de cópia manual com revisão esperada. Cliente HTTPS e tela ligados ao VM.
-  Sem sincronização automática ou restauração do banco local.
-- Voz: seleção offline pt-BR, teste, velocidade, tonalidade, persistência por perfil,
-  tratamento de falhas e temporizadores. Não garante voz masculina específica.
-- Abertura: JPEG oficial, close no peito, zoom para imagem completa, Pular e fade.
-  Referência em drawable-nodpi; Canvas original preservado na central.
-- Rotinas/versículos preservados. Não alterar sua lógica para prosseguir.
+O fonte foi publicado no [repositório AURON-](https://github.com/guilhermesantossilva1209-stack/AURON-).
+O [CI 39996099432](https://github.com/guilhermesantossilva1209-stack/AURON-/actions/runs/39996099432)
+passou no commit `9f2f34e728b54de543769eb38591edc1a1fcee34`:
 
-## Próximas ações reais
+- PostgreSQL16: migração idempotente e ensaios RLS aprovados.
+- 50 testes Node, 9 verificações estáticas e 3 testes SQLite/ativos aprovados.
+- 72 testes JVM aprovados; Lint com 0 erros e 17 avisos.
+- APK debug e APK de instrumentação compilados; os 36 testes instrumentados
+  **não foram executados**.
 
-1. Executar o workflow existente após atualizar os arquivos do mesmo repositório:
-   PostgreSQL descartável → testes JVM/Lint/APKs → emulador Android16 opcional.
-2. Corrigir qualquer falha real de compilação/testes que aparecer. Não há aprovação
-   Kotlin/Android nesta entrega, porque Gradle/SDK/kotlinc/ADB não estão instalados.
-3. Usuário preencherá URL/chave pública no tablet. Aplicar migração e allowlist,
-   ativar Auth Hook, preparar página HTTPS/SMTP, cadastrar e confirmar proprietário.
-   Leia [autenticação](AUTH-SETUP.md) e [nuvem](CLOUD.md).
-4. Usar a chave de assinatura original para gerar atualização. Não desinstalar,
-   limpar dados nem criar chave substituta prometendo compatibilidade.
-5. Instalar no Lenovo Idea Tab TB336FU Android16 e testar voz/abertura/autenticação.
+[Artefato 12520066542](https://github.com/guilhermesantossilva1209-stack/AURON-/actions/runs/39996099432/artifacts/12520066542).
+APK local: `/workspace/library-files/AURON-0.2.1-validacao-debug.apk`,
+17.953.065 bytes, SHA-256
+`6f73fbc24dcc9589e43f92c625a1f308b80eddd3d68c3b885db834e34f73d658`.
 
-## Limites conhecidos
+**Esse APK debug ainda não tem compatibilidade de assinatura confirmada para
+atualizar a instalação atual.** O usuário informou que o APK instalado foi
+gerado em Android Studio ou outro compilador. Não há APK original ou chave
+original disponível aqui.
 
-Nenhum projeto remoto foi configurado, workflow publicado/executado ou APK novo
-gerado aqui. Não existe teste físico do tablet. SQL PostgreSQL/RLS foi escrito,
-mas precisa executar no job próprio; testes SQLite não validam RLS.
+## Implementação preservada
 
-A sondagem de rede padrão falhou no proxy. Uma solicitação de permissão adicional
-foi abortada sem execução do comando; não há autorização/resultados para reutilizar.
-Não repetir loops de instalação ou aguardar permissão indefinidamente. PostgreSQL
-ausente e socket Docker bloqueado. Testes HTTP com sockets falham listen EPERM.
+- Supabase Auth: cadastro inicial, confirmação de senha, política de proprietário,
+  login, recuperação, sessão protegida por Keystore e logout; perfil local explícito.
+- SQL: allowlist de um e-mail, Auth Hook, RLS e RPCs de cópia manual com revisão
+  esperada. Cliente HTTPS integrado à tela e ao ViewModel; sem sincronização
+  automática ou restauração do banco local.
+- Voz nativa: seleção offline pt-BR, teste, velocidade, tonalidade, persistência
+  por perfil e tratamento de falhas. Nenhuma voz masculina específica é garantida.
+- Abertura: imagem oficial, close no peito, zoom até o cenário completo, Pular
+  e transição; Canvas original preservado na central.
+- Rotinas e cinco versículos diários preservados. Não alterar sua lógica.
 
-As evidências atuais estão em [VALIDATION.md](VALIDATION.md) e docs/verification.
-O relatório desta revisão é [DELIVERY-0.2.1.md](DELIVERY-0.2.1.md).
+## Próximas ações necessárias
+
+1. Localizar a chave original no ambiente que gerou o APK instalado e comparar
+   pacote, versão e certificado. Configurar os quatro Secrets indicados em
+   [BUILD-0.2.1.md](BUILD-0.2.1.md) e executar `signed_update` com essa chave.
+   Não solicitar senhas na conversa, criar chave substituta, desinstalar ou limpar
+   dados para contornar incompatibilidade.
+2. Concluir a configuração e os testes do Supabase real. O usuário escolheu
+   preencher URL/chave pública no tablet. Verificar migração, allowlist, Auth Hook,
+   confirmação de e-mail e recuperação HTTPS/SMTP conforme
+   [AUTH-SETUP.md](AUTH-SETUP.md) e [CLOUD.md](CLOUD.md).
+3. Executar os testes instrumentados em Android16/API36; habilitar animações ao
+   validar o movimento da abertura. Não confundir APK de testes compilado com
+   testes instrumentados executados.
+4. Instalar a atualização assinada no Lenovo Idea Tab TB336FU Android16 e validar
+   dados antigos, navegação, voz, abertura, autenticação e operação sem rede.
+
+## Limites e histórico
+
+O CI aprovado superou os antigos bloqueios de compilação local, testes HTTP com
+`listen EPERM` e ausência de PostgreSQL. Não repetir instalações de ferramentas
+locais só para reproduzir verificações já aprovadas; usar o workflow existente.
+O CI não configurou nem testou o projeto Supabase real, não acessou o tablet e
+não confirmou a assinatura da instalação atual.
+
+Resultados e limites: [VALIDATION.md](VALIDATION.md).
+Entrega: [DELIVERY-0.2.1.md](DELIVERY-0.2.1.md).
