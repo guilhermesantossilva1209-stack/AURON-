@@ -1,0 +1,12 @@
+✔ only explicit recovery tokens are accepted, never signup sessions (3.712142ms)
+✔ configuration requires HTTPS root URL and public key (0.717845ms)
+✔ legacy anon key is accepted and service_role key rejected (0.419568ms)
+✔ new password must meet length and confirmation without trimming (0.341536ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 13.001725

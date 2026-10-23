@@ -1,0 +1,31 @@
+✔ handler: health does not request authentication or inference (5.201873ms)
+✔ handler: unknown routes and unsupported methods reject before upstream calls (0.517701ms)
+✔ handler: valid Supabase session produces a bounded Ollama request (10.370647ms)
+✔ handler: absent, malformed, and invalid sessions fail closed (2.19523ms)
+✔ handler: missing Supabase user id cannot authorize a model request (2.36541ms)
+✔ handler: upstream auth errors do not disclose raw responses or exception text (1.177873ms)
+✔ handler: auth timeout aborts through the injected fetch signal and prevents inference (21.502604ms)
+✔ handler: consent false discards history and memories even when their fields are invalid (2.347374ms)
+✔ handler: consent flags independently select history and memory (2.31125ms)
+✔ handler: historical messages preserve user/assistant roles and reject system injection (1.395613ms)
+✔ handler: consent and personality require valid bounded values (2.200418ms)
+✔ handler: empty, wrong-type and overlong input reject; maximum input is accepted (3.157125ms)
+✔ handler: history and memory field and count limits are enforced (1.618522ms)
+✔ handler: combined context has a 10000-character ceiling (0.929628ms)
+✔ handler: malformed JSON, content type, and declared or streamed body overflow reject (0.80876ms)
+✔ handler: rate limit isolates user ids and survives access-token changes (1.269407ms)
+✔ handler: concurrent users retain separate contexts and outputs (1.882539ms)
+✔ handler: concurrency limit rejects extra work and releases capacity after completion (1.082442ms)
+✔ handler: provider errors never echo private upstream response or exception details (1.126197ms)
+✔ handler: malformed, empty, oversized and wrong-type provider responses reject (1.979112ms)
+✔ handler: provider timeout is bounded and its request receives an aborted signal (21.258525ms)
+✔ handler: OpenAI-compatible shape keeps model credential only in upstream authorization (0.813978ms)
+✔ handler: configuration rejects unsafe endpoints and privileged Supabase keys (0.648104ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 97.6494

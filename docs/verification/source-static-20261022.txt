@@ -1,0 +1,76 @@
+{
+  "scope": "Static source/packaging checks only; no Kotlin compilation or Android execution.",
+  "checks": [
+    {
+      "check": "xml_well_formed",
+      "passed": true,
+      "detail": "5 XML documents parsed"
+    },
+    {
+      "check": "minimal_permissions",
+      "passed": true,
+      "detail": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.INTERNET"
+      ]
+    },
+    {
+      "check": "no_background_components",
+      "passed": true,
+      "detail": "No application service or receiver declared"
+    },
+    {
+      "check": "backup_disabled",
+      "passed": true,
+      "detail": "Manifest backup flags"
+    },
+    {
+      "check": "backup_and_transfer_excluded",
+      "passed": true,
+      "detail": "Both extraction sections exclude private and external domains"
+    },
+    {
+      "check": "manifest_activity_sources",
+      "passed": true,
+      "detail": "Declared Activity source exists"
+    },
+    {
+      "check": "manifest_resource_targets",
+      "passed": true,
+      "detail": [
+        [
+          "xml",
+          "data_extraction_rules"
+        ],
+        [
+          "drawable",
+          "ic_auron"
+        ],
+        [
+          "string",
+          "app_name"
+        ],
+        [
+          "style",
+          "Theme.Auron"
+        ]
+      ]
+    },
+    {
+      "check": "source_components_present",
+      "passed": true,
+      "detail": "26 required source components"
+    },
+    {
+      "check": "documentation_links",
+      "passed": true,
+      "detail": "Local Markdown link targets exist"
+    }
+  ],
+  "passed": 9,
+  "total": 9,
+  "test_sources_not_executed": {
+    "test": 69,
+    "androidTest": 36
+  }
+}

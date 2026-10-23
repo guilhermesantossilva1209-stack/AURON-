@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src https://seu-projeto.supabase.co; base-uri 'none'; form-action 'none'">
+  <title>AURON · Recuperação de acesso</title>
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="recovery.mjs"></script>
+</head>
+<body>
+  <main>
+    <p class="brand">AURON</p>
+    <h1>Recupere seu acesso</h1>
+    <p>A nova senha será enviada somente ao serviço de autenticação configurado para o AURON. Confira a conta antes de continuar.</p>
+    <p id="status" role="status" aria-live="polite">Verificando o link…</p>
+    <form id="recovery" hidden>
+      <label for="password">Nova senha</label>
+      <input id="password" type="password" autocomplete="new-password" minlength="8" maxlength="4096" required>
+      <label for="confirmation">Confirme a nova senha</label>
+      <input id="confirmation" type="password" autocomplete="new-password" minlength="8" maxlength="4096" required>
+      <button id="submit" type="submit">Definir nova senha</button>
+    </form>
+    <p class="note">Depois de concluir, volte ao aplicativo AURON e entre novamente. Esta página não acessa tarefas, conversas ou memórias.</p>
+  </main>
+</body>
+</html>

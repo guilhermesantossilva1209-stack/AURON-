@@ -1,0 +1,8 @@
+test_actual_migration_sql_preserves_all_legacy_rows (__main__.OfflineValidation.test_actual_migration_sql_preserves_all_legacy_rows) ... ok
+test_bible_asset_has_complete_unique_groups_and_attribution (__main__.OfflineValidation.test_bible_asset_has_complete_unique_groups_and_attribution) ... ok
+test_new_tables_keep_one_reading_per_day_and_store_ciphertext (__main__.OfflineValidation.test_new_tables_keep_one_reading_per_day_and_store_ciphertext) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.006s
+
+OK

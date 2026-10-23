@@ -1,0 +1,34 @@
+✔ handler: health does not request authentication or inference (4.224667ms)
+✔ handler: unknown routes and unsupported methods reject before upstream calls (1.124882ms)
+✔ handler: valid Supabase session produces a bounded Ollama request (10.968722ms)
+✔ handler: absent, malformed, and invalid sessions fail closed (2.078187ms)
+✔ handler: missing Supabase user id cannot authorize a model request (1.218168ms)
+✔ handler: another authenticated account cannot call the owner model or choose an owner in the body (2.888142ms)
+✔ handler: a malformed authenticated user id cannot match an owner (0.937839ms)
+✔ handler: personal configuration fails closed without an explicit valid owner UUID (0.619724ms)
+✔ handler: upstream auth errors do not disclose raw responses or exception text (1.450202ms)
+✔ handler: auth timeout aborts through the injected fetch signal and prevents inference (20.730002ms)
+✔ handler: consent false discards history and memories even when their fields are invalid (1.32088ms)
+✔ handler: consent flags independently select history and memory (2.33517ms)
+✔ handler: historical messages preserve user/assistant roles and reject system injection (1.208245ms)
+✔ handler: consent and personality require valid bounded values (1.167703ms)
+✔ handler: empty, wrong-type and overlong input reject; maximum input is accepted (1.294431ms)
+✔ handler: history and memory field and count limits are enforced (1.080199ms)
+✔ handler: combined context has a 10000-character ceiling (0.816605ms)
+✔ handler: malformed JSON, content type, and declared or streamed body overflow reject (2.718358ms)
+✔ handler: owner rate limit survives token changes and does not authorize a different account (0.908616ms)
+✔ handler: concurrent owner requests retain separate contexts and outputs (1.262658ms)
+✔ handler: concurrency limit rejects extra work and releases capacity after completion (1.355747ms)
+✔ handler: provider errors never echo private upstream response or exception details (1.40908ms)
+✔ handler: malformed, empty, oversized and wrong-type provider responses reject (3.027548ms)
+✔ handler: provider timeout is bounded and its request receives an aborted signal (20.98485ms)
+✔ handler: OpenAI-compatible shape keeps model credential only in upstream authorization (0.82449ms)
+✔ handler: configuration rejects unsafe endpoints and privileged Supabase keys (0.50008ms)
+ℹ tests 26
+ℹ suites 0
+ℹ pass 26
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 97.869652

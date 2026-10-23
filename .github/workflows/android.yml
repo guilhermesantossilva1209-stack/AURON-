@@ -1,0 +1,160 @@
+name: Android — compilar e verificar
+on:
+  workflow_dispatch:
+    inputs:
+      instrumentation:
+        description: Executar testes instrumentados em tablet Android 16 emulado
+        required: false
+        default: false
+        type: boolean
+      signed_update:
+        description: Gerar atualização com a chave original configurada nos Secrets
+        required: false
+        default: false
+        type: boolean
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  postgres-security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: auron_security_test
+          POSTGRES_USER: postgres
+          # Disposable CI fixture only. Never use these credentials in Supabase.
+          POSTGRES_PASSWORD: auron_disposable_ci_fixture
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d auron_security_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: '5432'
+      PGDATABASE: auron_security_test
+      PGUSER: postgres
+      PGPASSWORD: auron_disposable_ci_fixture
+      PGCONNECT_TIMEOUT: '5'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verificar cliente PostgreSQL do runner
+        run: command -v psql
+      - name: Validar migração idempotente e segurança em banco descartável
+        run: |
+          set -euo pipefail
+          psql -X -v ON_ERROR_STOP=1 \
+            -f supabase/tests/bootstrap.sql \
+            -f supabase/migrations/202610220001_owner_cloud.sql \
+            -f supabase/migrations/202610220001_owner_cloud.sql \
+            -f supabase/tests/checks.sql 2>&1 | tee postgres-security.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: AURON-seguranca-PostgreSQL
+          path: postgres-security.log
+          if-no-files-found: warn
+
+  build:
+    needs: postgres-security
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verificar fontes e servidor
+        run: |
+          python3 scripts/check-source.py
+          python3 scripts/verify-offline.py
+          node server/test/handler.test.mjs
+          node server/test/server.test.mjs
+          node docs/recovery/test/policy.test.mjs
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+      - name: Verificar, testar e gerar APK
+        run: gradle --no-daemon testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest
+      - name: Preparar chave original de atualização
+        if: github.event_name == 'workflow_dispatch' && inputs.signed_update
+        env:
+          ORIGINAL_KEYSTORE: ${{ secrets.AURON_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.AURON_STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.AURON_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.AURON_KEY_PASSWORD }}
+        run: |
+          test -n "$ORIGINAL_KEYSTORE" && test -n "$STORE_PASSWORD" && test -n "$KEY_ALIAS" && test -n "$KEY_PASSWORD" || { echo 'Configure os quatro Secrets da chave original antes de gerar atualização.'; exit 1; }
+          printf '%s' "$ORIGINAL_KEYSTORE" | base64 --decode > "$RUNNER_TEMP/auron-original.keystore"
+          chmod 600 "$RUNNER_TEMP/auron-original.keystore"
+      - name: Gerar APK com assinatura original
+        if: github.event_name == 'workflow_dispatch' && inputs.signed_update
+        env:
+          AURON_KEYSTORE_PATH: ${{ runner.temp }}/auron-original.keystore
+          AURON_STORE_PASSWORD: ${{ secrets.AURON_STORE_PASSWORD }}
+          AURON_KEY_ALIAS: ${{ secrets.AURON_KEY_ALIAS }}
+          AURON_KEY_PASSWORD: ${{ secrets.AURON_KEY_PASSWORD }}
+        run: gradle --no-daemon assembleRelease
+      - name: Remover cópia temporária da chave
+        if: always()
+        run: rm -f "$RUNNER_TEMP/auron-original.keystore"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: AURON-APK-e-relatorios
+          path: |
+            app/build/outputs/apk/debug/*.apk
+            app/build/outputs/apk/release/*.apk
+            app/build/reports/
+          if-no-files-found: warn
+
+  tablet-tests:
+    if: github.event_name == 'workflow_dispatch' && inputs.instrumentation
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+      - name: Habilitar aceleração do emulador
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Executar testes em tablet Android 16
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 36
+          target: google_apis
+          arch: x86_64
+          profile: pixel_c
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: gradle --no-daemon connectedDebugAndroidTest
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: AURON-testes-tablet
+          path: |
+            app/build/reports/androidTests/
+            app/build/outputs/androidTest-results/
+          if-no-files-found: warn
