@@ -40,7 +40,7 @@ df1d3acd4733b86368bba9f1b83981bed7f245b964bd1fb595e730e0c9dea51e  app/src/main/j
 217e78e758d99303273cc9d596b978aeaf405746c668167011ea0a4adfc43b8e  app/src/main/java/br/com/auron/domain/Models.kt
 ab347d2d2c52966e83152a3295ce21474b28f87d41224adf82bc0f6f5e0ef531  app/src/main/java/br/com/auron/domain/Repositories.kt
 f09306fd2b6bd77d5639f6b6b91116a504224b095ece85806b973416259d7d06  app/src/main/java/br/com/auron/ui/AuronApp.kt
-d8353cdf01234294efbdfab91dcad6c2771a24e5e9a27692a3516a0621eec538  app/src/main/java/br/com/auron/ui/AuronRobot.kt
+8198006e9c57f823197d5ec11f37e9a7efbb5568309084af081fc284d6f6b545  app/src/main/java/br/com/auron/ui/AuronRobot.kt
 93d4dc0792932ef6bac0b38ab16d763cd70124b865ab283bd26c16295de72cfa  app/src/main/java/br/com/auron/ui/AuronViewModel.kt
 2c90eb5229bd6e3692304af70421d6378107ae4038a525dbf24017e6ae299c96  app/src/main/java/br/com/auron/ui/AuthScreens.kt
 78a96328614d1882b1efe68a2ca22b8536136c6f552a166d9b4a40f0e3f47ff6  app/src/main/java/br/com/auron/ui/BibleReadingSheet.kt
@@ -59,7 +59,8 @@ bf97cd207fd1553ea7e9e7fcdc4960d9dc43cc620a4ebe884eaf4d3e81971251  app/src/main/j
 ddf6f52bcb78a365892217557edc64a8e614cf547fd3f592fad80d78e2acac93  app/src/main/res/drawable/ic_auron.xml
 84ef47f3b312be9d5931970f92e63d057fecbab083d8679f7d13e803b365cde7  app/src/main/res/drawable-nodpi/auron_intro_reference.jpg
 73b0df5156ebec74de83d0452217f34f21bbe72f3440bc47b395b302251ac5fb  app/src/main/res/values/strings.xml
-fb98c723b26e3da3ace73ae9b2866261bff3efefedb2972900efbc11d0d8be42  app/src/main/res/values/themes.xml
+745c3979ead10a72bcaab9fc4924ababf80c5cdc833cb168a115b6b88e45dad8  app/src/main/res/values/themes.xml
+047af564e31d438c8731cee75ada791cdce3bc6893314c18e07906b8fa55b7fd  app/src/main/res/values-v27/themes.xml
 8d80e149b783104ab9d9d085ace8cb50bfee6c1fe4af01e933997fc2d77ff06f  app/src/main/res/xml/data_extraction_rules.xml
 c675266f3d58a6ef81a12a441d62e499fed1b2f4428af8f58d0584aedbb6594b  app/src/test/java/br/com/auron/ai/AiContextBuilderTest.kt
 3207d710e1959c5958db1610b6ba67ca790077bf78cacf492811438bea603ddf  app/src/test/java/br/com/auron/ai/RemoteAiProviderTest.kt

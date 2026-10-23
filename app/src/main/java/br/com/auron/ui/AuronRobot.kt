@@ -261,8 +261,9 @@ private fun polygon(vararg xy: Float) = Path().apply {
 @Composable
 internal fun AuronIntro(deadlineElapsedMs: Long? = null, onSkip: () -> Unit) {
     val context = LocalContext.current.applicationContext
-    val reference by produceState<ImageBitmap?>(initialValue = null, context) {
-        value = withContext(Dispatchers.IO) {
+    var reference by remember { mutableStateOf<ImageBitmap?>(null) }
+    LaunchedEffect(context) {
+        reference = withContext(Dispatchers.IO) {
             runCatching {
                 BitmapFactory.decodeResource(context.resources, R.drawable.auron_intro_reference,
                     BitmapFactory.Options().apply { inScaled = false })?.asImageBitmap()

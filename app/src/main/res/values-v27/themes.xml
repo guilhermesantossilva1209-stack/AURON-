@@ -1,0 +1,5 @@
+<resources>
+    <style name="Theme.Auron" parent="Base.Theme.Auron">
+        <item name="android:windowLightNavigationBar">false</item>
+    </style>
+</resources>
