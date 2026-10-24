@@ -1,70 +1,31 @@
-# Retomar a entrega AURON 0.2.1
+# Estado final — AURON 0.2.1, Fase 3
 
-Fonte atual: `/workspace/auron`. Aplicativo `br.com.auron`, `versionCode=3`,
-`versionName=0.2.1`, Room2, Android mínimo26 e compile/target35. Não reiniciar o
-projeto nem substituir estes arquivos por uma cópia antiga. Snapshots preservados:
-`/workspace/auron-preserved-0.2-before-0.2.1` e
-`/workspace/auron-preserved-2026-10-22`.
+Fonte atual: `/workspace/auron`; não reiniciar nem substituir por snapshots antigos.
+ApplicationId `br.com.auron`, versionName0.2.1, versionCode4, Room2, min26/target35.
+Código validado: `bfdafa97c315853613504f3fdee9db916d4e1743`; [CI aprovado](https://github.com/guilhermesantossilva1209-stack/AURON-/actions/runs/40128363671).
 
-## Estado confirmado em 23/10/2026
+## Concluído nesta etapa
 
-O fonte foi publicado no [repositório AURON-](https://github.com/guilhermesantossilva1209-stack/AURON-).
-O [CI 39996099432](https://github.com/guilhermesantossilva1209-stack/AURON-/actions/runs/39996099432)
-passou no commit `9f2f34e728b54de543769eb38591edc1a1fcee34`:
+Campos de autenticação, IA opcional em modo local/autenticado, automação autorizada,
+notificações com lista por perfil, confirmação WhatsApp via RemoteInput e nova imagem
+exata de entrada. Rotinas, versículos e voz preservados. Abertura aproxima a câmera
+do peito e depois restaura o corpo completo. Painel de leitura bíblica abre expandido após falha de teste.
 
-- PostgreSQL16: migração idempotente e ensaios RLS aprovados.
-- 50 testes Node, 9 verificações estáticas e 3 testes SQLite/ativos aprovados.
-- 72 testes JVM aprovados; Lint com 0 erros e 17 avisos.
-- APK debug e APK de instrumentação compilados; os 36 testes instrumentados
-  **não foram executados**.
+99 testes JVM, 59 Node, 3 offline, 9 verificações estáticas, PostgreSQL segurança e
+59 testes Android16 passaram. Lint0erros18avisos. APK debug gerado e imagem conferida.
+[Resultados completos](VALIDATION.md) e [entrega](DELIVERY-PHASE3.md).
 
-[Artefato 12520066542](https://github.com/guilhermesantossilva1209-stack/AURON-/actions/runs/39996099432/artifacts/12520066542).
-APK local: `/workspace/library-files/AURON-0.2.1-validacao-debug.apk`,
-17.953.065 bytes, SHA-256
-`6f73fbc24dcc9589e43f92c625a1f308b80eddd3d68c3b885db834e34f73d658`.
+## Pendências externas — não reiniciar desenvolvimento
 
-**Esse APK debug ainda não tem compatibilidade de assinatura confirmada para
-atualizar a instalação atual.** O usuário informou que o APK instalado foi
-gerado em Android Studio ou outro compilador. Não há APK original ou chave
-original disponível aqui.
+1. Supabase: migração e allowlist JÁ aplicadas. Ativar Hook Before User Created no
+   painel, configurar confirmação/recuperação/SMTP, preencher URL/chave pública no
+   tablet e criar/confirmar a conta. Não criar senhas nem publicar e-mail/segredos.
+2. IA: proprietário informou que ainda não tem servidor. Instalar gateway/modelo
+   conforme AI-SETUP.md; nenhum serviço foi contratado e não há modelo ativo.
+3. Usar a chave ORIGINAL do compilador que gerou o APK instalado; não substituir
+   a assinatura, desinstalar ou apagar dados para contornar incompatibilidade.
+4. Testar no Lenovo Android16 abertura, dados antigos, voz e WhatsApp real. Testes
+   instrumentados usam emulador descartável, nunca o perfil pessoal do proprietário.
 
-## Implementação preservada
-
-- Supabase Auth: cadastro inicial, confirmação de senha, política de proprietário,
-  login, recuperação, sessão protegida por Keystore e logout; perfil local explícito.
-- SQL: allowlist de um e-mail, Auth Hook, RLS e RPCs de cópia manual com revisão
-  esperada. Cliente HTTPS integrado à tela e ao ViewModel; sem sincronização
-  automática ou restauração do banco local.
-- Voz nativa: seleção offline pt-BR, teste, velocidade, tonalidade, persistência
-  por perfil e tratamento de falhas. Nenhuma voz masculina específica é garantida.
-- Abertura: imagem oficial, close no peito, zoom até o cenário completo, Pular
-  e transição; Canvas original preservado na central.
-- Rotinas e cinco versículos diários preservados. Não alterar sua lógica.
-
-## Próximas ações necessárias
-
-1. Localizar a chave original no ambiente que gerou o APK instalado e comparar
-   pacote, versão e certificado. Configurar os quatro Secrets indicados em
-   [BUILD-0.2.1.md](BUILD-0.2.1.md) e executar `signed_update` com essa chave.
-   Não solicitar senhas na conversa, criar chave substituta, desinstalar ou limpar
-   dados para contornar incompatibilidade.
-2. Concluir a configuração e os testes do Supabase real. O usuário escolheu
-   preencher URL/chave pública no tablet. Verificar migração, allowlist, Auth Hook,
-   confirmação de e-mail e recuperação HTTPS/SMTP conforme
-   [AUTH-SETUP.md](AUTH-SETUP.md) e [CLOUD.md](CLOUD.md).
-3. Executar os testes instrumentados em Android16/API36; habilitar animações ao
-   validar o movimento da abertura. Não confundir APK de testes compilado com
-   testes instrumentados executados.
-4. Instalar a atualização assinada no Lenovo Idea Tab TB336FU Android16 e validar
-   dados antigos, navegação, voz, abertura, autenticação e operação sem rede.
-
-## Limites e histórico
-
-O CI aprovado superou os antigos bloqueios de compilação local, testes HTTP com
-`listen EPERM` e ausência de PostgreSQL. Não repetir instalações de ferramentas
-locais só para reproduzir verificações já aprovadas; usar o workflow existente.
-O CI não configurou nem testou o projeto Supabase real, não acessou o tablet e
-não confirmou a assinatura da instalação atual.
-
-Resultados e limites: [VALIDATION.md](VALIDATION.md).
-Entrega: [DELIVERY-0.2.1.md](DELIVERY-0.2.1.md).
+Esta etapa não contém voz contínua, shell, AccessibilityService, leitura de bancos
+WhatsApp nem automação oculta. Notificações são processadas só com AURON aberto.

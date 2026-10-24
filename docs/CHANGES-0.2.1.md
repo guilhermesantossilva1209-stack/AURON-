@@ -1,5 +1,13 @@
 # Inventário de alterações 0.2.1
 
+## Revisão de 24/10/2026 — versionCode4
+
+Correções de acesso, IA nos modos local/autenticado, automações autorizadas e nova
+imagem oficial. Resumo atual em [DELIVERY-PHASE3.md](DELIVERY-PHASE3.md), evidências
+em [VALIDATION.md](VALIDATION.md). Os itens abaixo registram a revisão anterior.
+
+## Inventário anterior
+
 Comparação com a cópia preservada antes da revisão 0.2.1. Nenhum arquivo anterior removido.
 
 | Estado | Arquivo |

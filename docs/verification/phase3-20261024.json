@@ -1,0 +1,52 @@
+{
+  "commit": "bfdafa97c315853613504f3fdee9db916d4e1743",
+  "run": 40128363671,
+  "apk_bytes": 17951808,
+  "apk_sha256": "957795985ca1a35491f3141c186482965a4b9d89e2888607ad5f595e4cda3d32",
+  "lint_errors": 0,
+  "lint_warnings": 18,
+  "jvm": {
+    "tests": "99",
+    "failures": "0",
+    "ignored": "0",
+    "duration": "0.501s"
+  },
+  "android": {
+    "counts": {
+      "tests": 59,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "classes": [
+      "br.com.auron.ai.LocalAiAccessStoreTest",
+      "br.com.auron.auth.SessionPersistenceTest",
+      "br.com.auron.automation.AutomationControllerTest",
+      "br.com.auron.data.AuronMigrationTest",
+      "br.com.auron.data.ProfileAndMemoryPersistenceTest",
+      "br.com.auron.data.RoomRepositoryPersistenceTest",
+      "br.com.auron.data.SettingsPersistenceTest",
+      "br.com.auron.ui.AuronSmokeTest",
+      "br.com.auron.ui.AuthScreenTest",
+      "br.com.auron.ui.AutomationScreenTest",
+      "br.com.auron.ui.BibleReadingTest",
+      "br.com.auron.ui.CloudBackupScreenTest",
+      "br.com.auron.ui.ConnectionSettingsTest",
+      "br.com.auron.ui.OpeningAnimationTest",
+      "br.com.auron.voice.VoiceSettingsTest"
+    ]
+  },
+  "node": {
+    "handler": 33,
+    "http": 22,
+    "recovery": 4
+  },
+  "offline": 3,
+  "static_checks": 9,
+  "postgres_security": "passed",
+  "original_image_sha256": "0cd930a3c3ed9fa6e9648ffceefa7e049527f305d466301649ebfdf9d35f060a",
+  "physical_tablet_tested": false,
+  "live_model_tested": false,
+  "live_auth_login_tested": false,
+  "original_signing_certificate_compared": false
+}

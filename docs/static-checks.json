@@ -4,7 +4,7 @@
     {
       "check": "xml_well_formed",
       "passed": true,
-      "detail": "5 XML documents parsed"
+      "detail": "6 XML documents parsed"
     },
     {
       "check": "minimal_permissions",
@@ -15,9 +15,9 @@
       ]
     },
     {
-      "check": "no_background_components",
+      "check": "authorized_notification_listener_only",
       "passed": true,
-      "detail": "No application service or receiver declared"
+      "detail": "Only the Android permission-protected notification listener; no hidden receiver or broad package access"
     },
     {
       "check": "backup_disabled",
@@ -70,7 +70,7 @@
   "passed": 9,
   "total": 9,
   "test_sources_not_executed": {
-    "test": 72,
-    "androidTest": 36
+    "test": 99,
+    "androidTest": 59
   }
 }

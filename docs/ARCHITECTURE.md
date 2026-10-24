@@ -74,8 +74,20 @@ ser configurados no serviço escolhido. Consulte [IA](AI-SETUP.md).
 
 Comandos são uma gramática limitada. Só submissões diretas do usuário chegam ao
 parser. Texto de documentos, resposta de IA e conteúdo de APIs serão dados, nunca
-instruções autorizadas. Comandos atuais apenas alteram tarefas/rotinas ou navegam.
-Nenhum executor genérico de shell, intents externos ou acessibilidade está presente.
+instruções autorizadas. Comandos internos preservam tarefas/rotinas e navegação.
+Na Fase 3, comandos explícitos desconhecidos pelo parser interno podem selecionar
+abertura de Activity MAIN/LAUNCHER, painel/leitura de notificações ou preparação de
+rascunho. O Activity valida perfil e primeiro plano antes da execução; confirmação
+de mensagem só existe em UI separada, nunca em uma resposta do modelo.
+NotificationListenerService exige acesso concedido pelo Android, opt-in por perfil
+e aplicativos permitidos. Conteúdo e PendingIntents ficam somente em memória,
+com limpeza em mudança de perfil/primeiro plano/permissão. Não há executor shell
+nem AccessibilityService. Consulte [automações](AUTOMATION.md).
+
+O gateway admite credencial pessoal para o modo sem conta e sessão Supabase para
+o modo autenticado. LocalAiAccessStore usa Keystore, arquivo noBackup e associação
+à origem HTTPS. O servidor guarda o hash da credencial local; nunca a repassa ao
+modelo ou ao Supabase. O acesso remoto ainda depende de servidor/modelo configurado.
 
 ## Contas, persistência e isolamento
 

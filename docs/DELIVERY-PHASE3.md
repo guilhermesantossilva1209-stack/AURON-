@@ -14,7 +14,8 @@
   notificação, com rascunho e confirmação separada. Revogação/troca de perfil,
   atualização da notificação e expiração invalidam respostas pendentes.
 - Imagem de entrada substituída pelo JPEG exato enviado em 24/10/2026, 1067×1280,
-  fundo preto sem painéis. Zoom do peito ao corpo inteiro e transição preservados.
+  fundo preto sem painéis. Aproximação do peito seguida de afastamento até revelar
+  o corpo inteiro, com transição e prazo máximo preservados.
 - Apresentação do painel bíblico ajustada para abrir expandida no tablet. Lógica
   de seleção diária, explicações, dados e confirmação da tarefa permanecem iguais.
 
@@ -52,6 +53,8 @@ modelo real ainda precisam ser exercitados após essa configuração.
 
 ## Testes
 
+99 testes JVM, 59 Node, 59 Android16 emulado, 3 testes offline e 9 verificações
+estáticas aprovados. SQL de segurança aprovado e lint sem erros (18 avisos).
 Resultados finais, falhas encontradas e limites: [VALIDATION.md](VALIDATION.md).
 O teste de WhatsApp real, a voz instalada e a instalação por cima do aplicativo
 pessoal exigem o Lenovo do proprietário. Emulador não substitui essas verificações.
@@ -63,7 +66,7 @@ pessoal exigem o Lenovo do proprietário. Emulador não substitui essas verifica
 3. Compile com a mesma configuração de assinatura que gerou o APK instalado.
    Para release: Build → Generate Signed Bundle / APK → APK → escolha a chave original.
    Para debug: o notebook deve preservar a mesma debug.keystore originalmente usada.
-4. Confirme pacote `br.com.auron`, versionCode4 ou maior que o instalado, e mesmo
+4. Confirme pacote `br.com.auron`, versionCode4 não inferior ao instalado, e mesmo
    certificado. Nenhuma chave substituta deve ser criada para contornar erro.
 5. Transfira o APK ao tablet, abra-o e escolha **Atualizar**. Não desinstale nem limpe
    dados. Se a assinatura divergir, pare e recupere a chave do compilador original.

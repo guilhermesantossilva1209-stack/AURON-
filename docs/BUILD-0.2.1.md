@@ -3,8 +3,8 @@
 ## Revisão de 24/10/2026
 
 Fonte atual: versionCode4, versionName0.2.1, applicationId br.com.auron.
-A compilação desta etapa passou no [CI 40062208644](https://github.com/guilhermesantossilva1209-stack/AURON-/actions/runs/40062208644),
-com 99 testes JVM e lint sem erros. O estado final dos testes instrumentados e
+A compilação desta etapa passou no [CI 40128363671](https://github.com/guilhermesantossilva1209-stack/AURON-/actions/runs/40128363671),
+com 99 testes JVM, 59 testes no emulador Android16 e lint sem erros. Os detalhes e
 artefatos está em [VALIDATION.md](VALIDATION.md). Os resultados abaixo de 23/10
 são históricos e não substituem a validação da revisão atual.
 

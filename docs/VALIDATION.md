@@ -1,74 +1,98 @@
-# Validação AURON 0.2.1 — 23/10/2026
+# Validação AURON 0.2.1 — 24/10/2026
 
-**A compilação e os testes do CI foram aprovados no GitHub Actions.** Isso não
-equivale a teste físico no Lenovo TB336FU, validação do Supabase real ou confirmação
-da assinatura necessária para atualizar o aplicativo instalado.
+**Código compilado e testado:** `bfdafa97c315853613504f3fdee9db916d4e1743`.
+[Execução completa do GitHub Actions](https://github.com/guilhermesantossilva1209-stack/AURON-/actions/runs/40128363671): todos os jobs aprovados.
+Alterações posteriores de documentação e manifesto de hashes não mudam esse código.
 
-## Evidências do CI
-
-- [Execução aprovada 39996099432](https://github.com/guilhermesantossilva1209-stack/AURON-/actions/runs/39996099432).
-- Commit validado: `9f2f34e728b54de543769eb38591edc1a1fcee34`.
-- [Artefato APK e relatórios 12520066542](https://github.com/guilhermesantossilva1209-stack/AURON-/actions/runs/39996099432/artifacts/12520066542).
-- Comando Android: `gradle --no-daemon testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest`.
-
-| Verificação executada | Resultado |
+| Verificação | Resultado efetivamente observado |
 |---|---|
-| python3 scripts/check-source.py | 9/9 verificações estáticas aprovadas |
-| python3 scripts/verify-offline.py | 3/3 testes SQLite e ativos aprovados |
-| node server/test/handler.test.mjs | 26/26 aprovados |
-| node server/test/server.test.mjs | 20/20 aprovados no CI |
-| node docs/recovery/test/policy.test.mjs | 4/4 aprovados |
-| PostgreSQL16 descartável: migração idempotente e ensaios RLS | Aprovados |
-| Testes JVM | 72 executados, 0 falhas, 0 ignorados |
-| Android Lint | 0 erros, 17 avisos |
-| APK debug e APK de testes instrumentados | Compilados |
+| Kotlin/JVM | 99 testes aprovados, zero falhas/ignorados |
+| Servidor Node | 33 testes do handler + 22 testes HTTP aprovados |
+| Recuperação web | 4 testes de política aprovados |
+| Fonte/empacotamento | 9 verificações aprovadas |
+| SQLite, migração e catálogo bíblico | 3 testes offline aprovados |
+| PostgreSQL16 descartável | Migração aplicada duas vezes; proprietário, RLS e revisão aprovados |
+| Android16/API36 emulado, pixel_c | 59 testes aprovados, zero falhas/erros/ignorados |
+| Android Lint | Zero erros; 18 avisos |
+| APK de app e instrumentação | Compilados com sucesso |
 
-Os testes Node usam identidades e provedores controlados. Os ensaios PostgreSQL
-validam scripts em banco descartável, não o projeto Supabase AURON 0.2. Os testes
-SQLite verificam a preservação dos registros legados pela migração; não executam
-Room ou Android Keystore em um dispositivo.
+Comandos executados no CI:
 
-## APK disponível para validação
+```sh
+python3 scripts/check-source.py
+python3 scripts/verify-offline.py
+node server/test/handler.test.mjs
+node server/test/server.test.mjs
+node docs/recovery/test/policy.test.mjs
+gradle --no-daemon testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest
+gradle --no-daemon connectedDebugAndroidTest
+```
 
-Arquivo local: `/workspace/library-files/AURON-0.2.1-validacao-debug.apk`.
-Tamanho: **17.953.065 bytes**.
+O job SQL executou os scripts `supabase/tests/bootstrap.sql`, a migração existente
+(duas vezes, para verificar idempotência) e `supabase/tests/checks.sql` **somente
+em PostgreSQL descartável**, nunca no banco pessoal. O bootstrap é exclusivo de teste.
 
-SHA-256: `6f73fbc24dcc9589e43f92c625a1f308b80eddd3d68c3b885db834e34f73d658`.
+Os 59 testes Android cobrem toque/foco/entrada e IME nos formulários de acesso,
+validação e callbacks de login/cadastro, navegação, tarefas/histórico, migração,
+preferências, isolamento de perfis e memórias, sessões/credenciais cifradas,
+leitura bíblica, controles de voz e nuvem, imagem/zoom/Pular e notificações.
+Os cinco testes do controlador usam permissão real do Android concedida temporariamente
+por shell **no emulador**, com restauração, e notificações sintéticas. Não enviam
+mensagens reais. A animação estava habilitada; o teste de movimento foi executado.
 
-O APK usa a assinatura debug do CI. **A compatibilidade de atualização sobre a
-instalação atual ainda não foi validada.** O usuário informou que o APK original
-foi gerado em Android Studio ou outro compilador; a chave original não está
-disponível aqui. Não desinstalar o aplicativo nem limpar seus dados para contornar
-uma assinatura incompatível.
+## Falhas encontradas e corrigidas
 
-## Histórico dos bloqueios locais
+- Na primeira execução Android, o estado concluído da leitura não estava visível
+  no painel parcialmente expandido. O painel agora abre expandido, sem alteração
+  da lógica bíblica ou da conclusão da rotina. O teste passou na execução final.
+- O novo teste do controlador usou inicialmente uma assinatura de construtor de
+  StatusBarNotification ausente da API pública. Corrigido no código de teste; a
+  suíte foi compilada e executada integralmente depois.
+- O teste de movimento foi ignorado na primeira rodada, pois o workflow desativava
+  animações. Agora estão habilitadas e nenhum teste Android foi ignorado.
+- A revisão de código corrigiu invalidação de respostas quando a ação da notificação
+  muda, quando o conteúdo fica vazio/resumo, e interrupção da voz ao revogar consentimento.
 
-Antes do CI, Gradle/SDK/kotlinc/ADB estavam ausentes neste ambiente e o build local
-terminou com `gradle: command not found`. A rede pelo terminal e o socket Docker
-também apresentaram bloqueios. Os 20 testes HTTP falharam localmente em
-`listen EPERM 127.0.0.1`; **posteriormente passaram no GitHub Actions**.
-Os logs em [verification](verification/) e [static-checks.json](static-checks.json)
-registram a validação local anterior; os resultados atuais são os do CI acima.
+Os 18 avisos Lint são sugestões de atualização de dependências/target, constantes
+SpeechRecognizer e um alerta heurístico sobre singleton que retém somente
+applicationContext. Não foram trocadas dependências/SDK nem a voz nesta etapa.
 
-As correções de compilação preservaram as rotinas, o catálogo e seletor dos
-versículos, a persistência, `br.com.auron`, `versionCode=3`, `versionName=0.2.1`
-e Room2. A referência visual oficial foi preservada.
+## Supabase real
 
-## Ainda não testado ou dependente de configuração
+Projeto AURON 0.2: migração `auron_owner_cloud` aplicada e e-mail autorizado registrado
+na tabela privada. Consultas retornaram: proprietário permitido=true, outro e-mail
+recusado=true, evento sem e-mail recusado=true, RLS forçada=true, leitura anon=false,
+inserção direta authenticated=false, leitura da lista privada=false. Zero usuários
+Auth foram encontrados; nenhuma conta, senha ou cópia de dados do tablet foi criada.
 
-1. **36 testes instrumentados:** o APK de testes compilou, mas os testes não
-   foram executados. O workflow permite emulador Android16/API36. Para testar os
-   quadros da abertura, habilitar animações Android; o teste de movimento é
-   ignorado quando elas estão desativadas.
-2. **Supabase real:** aplicar/verificar scripts, allowlist e Auth Hook; validar
-   cadastro e confirmação do proprietário, login, recuperação, sessão, logout e
-   RLS. Configurar a página HTTPS de recuperação e o envio de e-mails conforme
-   [AUTH-SETUP.md](AUTH-SETUP.md).
-3. **Instalação segura:** comparar pacote, versão e certificado da instalação
-   atual e gerar o APK com a chave original antes de recomendar a atualização.
-4. **Tablet físico:** testar preservação dos registros, navegação, abertura, voz
-   offline instalada, preferências persistidas e comportamento sem rede.
+Isso verifica a função SQL e privilégios, **não a ativação do Auth Hook**, que depende
+do painel. Cadastro, confirmação, login e recuperação reais ainda dependem dessa
+configuração e de testes com a conta do proprietário. [Procedimento](AUTH-SETUP.md).
+Os avisos dos advisors e a função preexistente inspecionada estão documentados ali.
 
-Limitações de produto permanecem: cópia remota manual sem restauração ou
-sincronização; voz masculina depende das opções do dispositivo; abertura usa
-movimento de câmera sobre imagem 2D. Nenhum serviço real de IA foi validado no CI.
+## APK e preservação
+
+Artefato [AURON-APK-e-relatorios](https://github.com/guilhermesantossilva1209-stack/AURON-/actions/runs/40128363671/artifacts/12574560610).
+APK debug: `17951808` bytes, SHA-256:
+`957795985ca1a35491f3141c186482965a4b9d89e2888607ad5f595e4cda3d32`.
+
+A nova imagem está dentro do APK e seu SHA-256 coincide com o anexo original:
+`0cd930a3c3ed9fa6e9648ffceefa7e049527f305d466301649ebfdf9d35f060a`.
+Os 132 arquivos da versão-base continuam presentes. Arquivos de dados, seleção/
+catálogo bíblico e voz não mudaram. Nenhuma operação acessou/apagou dados do tablet.
+Persistência e migração passaram com dados de ensaio; os dados pessoais do Lenovo
+não foram inspecionados. Atualização mantém `br.com.auron`, versionName0.2.1,
+versionCode4, esquema Room existente e configuração de assinatura original.
+
+## Limites
+
+- Não houve acesso físico ao Lenovo TB336FU; voz masculina instalada, entrega real
+  pelo WhatsApp e desempenho físico precisam de teste no tablet.
+- O proprietário não possui servidor IA configurado. Handler/HTTP usam fixtures;
+  nenhum teste comprova inferência real. [Instalação do servidor](AI-SETUP.md).
+- Não há APK/chave da instalação original para comparação. O APK debug do CI é de
+  validação; só atualize a instalação pessoal com a chave original do Android Studio.
+- Gradle/SDK/adb não estão instalados na máquina local; o CI executou as verificações
+  Android. Aqui, os testes HTTP falham com listen EPERM; os mesmos 22 passaram no CI.
+
+[Entrega e instalação](DELIVERY-PHASE3.md) · [Automações](AUTOMATION.md).

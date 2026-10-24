@@ -20,6 +20,13 @@ que a configuração foi feita, **não uma barreira de segurança**. Uma requisi
 fora do app também precisa ser recusada pelo Hook. RLS protege os dados da nuvem
 separadamente. Não habilite cadastro antes de ativar e testar essa política.
 
+## Projeto desta entrega
+
+URL pública: `https://rejecmdixeeivueqwxcz.supabase.co`.
+Painel do Hook: [Authentication → Hooks](https://supabase.com/dashboard/project/rejecmdixeeivueqwxcz/auth/hooks).
+Copie a Publishable key em Settings → API Keys diretamente para o AURON.
+Esta chave pública não é a senha de login nem a chave administrativa.
+
 ## O que configurar, sem enviar segredos na conversa
 
 1. No navegador do tablet, abra o painel do projeto **AURON-0.2** que você administra.
@@ -137,10 +144,13 @@ de tarefas/memórias. Para a edição pessoal, outra conta existente deve ser re
 na nuvem e pelo gateway de IA. Testar rede indisponível e configuração incorreta. Nenhum desses
 fluxos externos foi realizado com uma conta real nesta entrega.
 
-Os testes Kotlin de políticas e Android de tela/Keystore foram escritos, mas não
-executados aqui por falta de Gradle/SDK. Quatro testes Node da política de recuperação
-passaram; eles não provam envio de e-mail nem alteração real de senha. Consulte
-[validação completa](VALIDATION.md).
+Os testes Kotlin de políticas e Android de tela/Keystore passaram no
+[CI 40128363671](https://github.com/guilhermesantossilva1209-stack/AURON-/actions/runs/40128363671),
+que executou 99 testes JVM e 59 testes instrumentados no emulador Android16.
+Gradle/SDK não estão disponíveis na máquina local; essa limitação foi atendida pelo CI.
+Os quatro testes Node da política de recuperação também passaram. Esses testes
+não provam envio de e-mail, alteração real de senha nem acesso à conta do
+proprietário. Consulte a [validação completa](VALIDATION.md).
 
 Referências oficiais para configuração (os links não substituem testes no projeto):
 - [Autenticação por senha e recuperação](https://supabase.com/docs/guides/auth/passwords).

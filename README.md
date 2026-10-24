@@ -4,7 +4,8 @@ Continuação do aplicativo Android existente, com o mesmo pacote **br.com.auron
 Android 8.0+ (API26), **versionCode4** e **versionName0.2.1**. Esta revisão corrige
 os campos de autenticação, integra IA opcional nos dois modos, atualiza a imagem
 oficial de abertura e acrescenta as automações autorizadas da Fase 3.
-Resultados e limites estão em [VALIDATION.md](docs/VALIDATION.md).
+99 testes JVM e 59 testes Android16 emulado passaram, além dos testes do servidor.
+[Entrega e instalação](docs/DELIVERY-PHASE3.md) · [Resultados e limites](docs/VALIDATION.md).
 A assinatura original deve ser reutilizada para atualizar o tablet sem desinstalar.
 
 ## Implementação nesta versão
@@ -15,7 +16,8 @@ A assinatura original deve ser reutilizada para atualizar o tablet sem desinstal
   Sessão cifrada no Android Keystore. Exige [configuração externa](docs/AUTH-SETUP.md).
 - Perfil local preservado, contas separadas e cópia explícita dos dados locais
   para uma conta, sem apagar os originais. Cadastro inicial restrito por Auth Hook
-  e lista do proprietário no Supabase, a serem configurados no painel.
+  e lista do proprietário no Supabase. A lista privada já foi configurada;
+  a ativação do Hook no painel ainda depende do proprietário.
 - Cópia manual na nuvem por HTTPS, com consentimento, consulta, exclusão, RLS e
   proteção contra revisão desatualizada. Sem restauração ou sincronização automática.
 - Central de comando e rotinas matinal/noturna preservadas; robô Canvas original
@@ -104,16 +106,19 @@ node server/test/handler.test.mjs
 node docs/recovery/test/policy.test.mjs
 ```
 
-Passaram 9 verificações estáticas, 3 verificações SQLite/ativos, 26 cenários do handler
-com fixtures e 4 de política de recuperação. Esses resultados não comprovam
-compilação Kotlin, acesso real ao Supabase, envio de e-mail ou inferência real.
-[Validação e bloqueios](docs/VALIDATION.md) · [Como retomar](docs/RESUME.md)
+O [CI aprovado](https://github.com/guilhermesantossilva1209-stack/AURON-/actions/runs/40128363671)
+executou 9 verificações estáticas, 3 testes SQLite/ativos, 33 testes do handler,
+22 testes HTTP, 4 de recuperação, 99 JVM e 59 instrumentados no emulador Android16.
+Todos passaram, assim como os testes PostgreSQL16/RLS e a compilação dos APKs.
+Lint terminou sem erros e com 18 avisos. Gradle/SDK não estão disponíveis na máquina
+local; as verificações Android foram executadas no GitHub Actions.
 
-O [CI aprovado](https://github.com/guilhermesantossilva1209-stack/AURON-/actions/runs/39996099432)
-validou PostgreSQL16/RLS, os 50 testes Node, 72 testes JVM, lint e compilação dos
-APKs. Os 36 testes instrumentados foram compilados, mas ainda não executados.
-Não houve teste físico no tablet nem autenticação contra o Supabase real nesta rodada.
-[Relatório desta entrega](docs/DELIVERY-0.2.1.md) · [Build Android16](docs/BUILD-0.2.1.md)
+Os testes do servidor usam fixtures. Não comprovam inferência real nem autenticação
+com a conta do proprietário. A migração e a política SQL foram verificadas no
+Supabase real, mas ativação do Hook, cadastro/login/recuperação HTTP e testes físicos
+no tablet continuam pendentes.
+[Validação e limites](docs/VALIDATION.md) · [Como retomar](docs/RESUME.md) ·
+[Relatório desta entrega](docs/DELIVERY-PHASE3.md) · [Build Android16](docs/BUILD-0.2.1.md)
 
 ## Comandos locais preservados
 

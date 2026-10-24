@@ -1,8 +1,12 @@
 # Gerar e instalar a atualização 0.2.1 pelo tablet
 
 O aplicativo continua Kotlin/Compose nativo, pacote **br.com.auron**, Android8+
-(API26). A versão 0.2.1 usa versionCode3. O projeto-fonte não é um APK instalável.
-Esta entrega não contém APK compilado. Não foi executado workflow remoto.
+(API26). A versão 0.2.1 usa **versionCode4**. O projeto-fonte não é um APK instalável.
+O [CI 40128363671](https://github.com/guilhermesantossilva1209-stack/AURON-/actions/runs/40128363671)
+compilou o APK debug e executou 99 testes JVM e 59 testes no emulador Android16,
+além das verificações do servidor e de segurança. O APK debug é de validação:
+sua assinatura não foi comparada à instalação pessoal. Consulte os
+[resultados e artefatos](VALIDATION.md) antes de instalar.
 
 ## Antes de atualizar: assinatura e dados
 
@@ -12,7 +16,7 @@ Esta entrega não contém APK compilado. Não foi executado workflow remoto.
 2. Identifique onde foi gerado o APK instalado e localize a **mesma chave de
    assinatura** usada nele. O código-fonte não revela a chave; ela não está neste
    ambiente. Não envie a chave ou senhas pelo chat.
-3. Android exige pacote igual, versão superior e certificado compatível para
+3. Android exige pacote igual, versionCode não inferior ao instalado e certificado compatível para
    instalar por cima preservando dados. O fluxo original de CI gerava APK debug;
    executores novos podem criar chaves debug diferentes. Um novo build bem-sucedido
    não prova compatibilidade com a instalação atual.
@@ -33,6 +37,11 @@ instalado. Aqui não há acesso ao tablet/APK antigo para verificar esse certifi
 
 ## Colocar o fonte atualizado no mesmo repositório
 
+O código desta revisão já foi publicado no
+[repositório autorizado](https://github.com/guilhermesantossilva1209-stack/AURON-).
+Não é necessário repetir o envio para compilar essa revisão. As instruções abaixo
+servem para quando você precisar enviar alterações futuras pelo seu próprio ambiente.
+
 O ZIP desta entrega contém uma pasta auron com arquivos e subpastas, inclusive
 .github. Na raiz do repositório devem aparecer app/, server/, docs/, scripts/,
 .github/, build.gradle.kts e settings.gradle.kts. **Enviar apenas o ZIP não basta.**
@@ -43,11 +52,11 @@ qualquer trabalho diferente desta entrega. Se não houver Codespace, use-o somen
 se disponível dentro da cota gratuita desejada; não habilite faturamento por esta
 instrução. Outra opção é qualquer ambiente de desenvolvimento existente com Git.
 
-Após enviar AURON-0.2.1-codigo-fonte.zip para a raiz do repositório no Codespace,
+Após enviar AURON-0.2.1-fase3-codigo-atualizado.zip para a raiz do repositório no Codespace,
 estes comandos extraem em pasta temporária e copiam a atualização preservando .git:
 
 ```bash
-python3 -m zipfile -e AURON-0.2.1-codigo-fonte.zip /tmp/auron-update-021
+python3 -m zipfile -e AURON-0.2.1-fase3-codigo-atualizado.zip /tmp/auron-update-021
 cp -a /tmp/auron-update-021/auron/. .
 git status --short
 ```
@@ -62,15 +71,16 @@ git commit -m "Integrar AURON 0.2.1 para validação"
 git push
 ```
 
-Os comandos são instruções para seu ambiente autenticado, não foram executados
-contra o seu GitHub nesta entrega. O envio do commit pode iniciar o workflow já
-configurado no repositório e consumir a cota de execução da conta.
+Os comandos são exemplos para seu ambiente autenticado. Nesta entrega, a publicação
+foi realizada pelo conector autorizado do GitHub. Um novo commit pode iniciar o
+workflow configurado no repositório e consumir a cota de execução da conta.
 
 ## Compilar no GitHub Actions
 
 1. No navegador, abra o mesmo repositório → **Actions → Android — compilar e
    verificar → Run workflow**.
-2. Para testes em emulador, marque **instrumentation**. A execução completa leva
+2. Na execução manual, para testes em emulador, marque **instrumentation**.
+   O emulador também roda nos pushes à branch principal. A execução completa leva
    mais tempo/cota. Não trate um job vermelho como APK validado: abra o primeiro
    erro do log e corrija antes de instalar.
 3. Antes do build, o workflow valida SQL/RLS em PostgreSQL16 descartável. Depois
@@ -111,7 +121,7 @@ Os testes em emulador do workflow usam Android16/API36; isso não comprova teste
 
 ## Compilação em outro ambiente disponível
 
-Requisitos: JDK17, Gradle8.10.2, Android SDK plataforma35 e Build Tools35.0.0,
+Requisitos: JDK17, Gradle8.10.2, Android SDK plataforma35 e Build Tools34.0.0,
 licenças SDK aceitas e internet para baixar dependências na primeira execução.
 Defina ANDROID_HOME ou sdk.dir em local.properties (não versionado).
 

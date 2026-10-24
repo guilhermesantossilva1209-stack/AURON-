@@ -1,3 +1,9 @@
+# Entrega atualizada — 24/10/2026
+
+O relatório atual desta versão, incluindo a Fase 3, está em
+[DELIVERY-PHASE3.md](DELIVERY-PHASE3.md) e [VALIDATION.md](VALIDATION.md).
+O conteúdo abaixo registra a entrega anterior de 23/10/2026 e é histórico.
+
 # Entrega AURON 0.2.1
 
 ## Atualização verificada — 23/10/2026
