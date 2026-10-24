@@ -124,7 +124,7 @@ jobs:
           if-no-files-found: warn
 
   tablet-tests:
-    if: github.event_name == 'workflow_dispatch' && inputs.instrumentation
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.instrumentation)
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 30

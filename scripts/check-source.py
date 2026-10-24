@@ -28,8 +28,14 @@ manifest = ET.parse(ROOT / 'app/src/main/AndroidManifest.xml').getroot()
 application = manifest.find('application')
 permissions = [item.get(ANDROID + 'name') for item in manifest.findall('uses-permission')]
 record('minimal_permissions', set(permissions) == {'android.permission.RECORD_AUDIO', 'android.permission.INTERNET'}, permissions)
-record('no_background_components', not application.findall('service') and not application.findall('receiver'),
-       'No application service or receiver declared')
+services = application.findall('service')
+record('authorized_notification_listener_only', len(services) == 1 and
+       services[0].get(ANDROID + 'name') == '.automation.AuronNotificationListenerService' and
+       services[0].get(ANDROID + 'permission') == 'android.permission.BIND_NOTIFICATION_LISTENER_SERVICE' and
+       services[0].get(ANDROID + 'exported') == 'true' and
+       [node.get(ANDROID + 'name') for node in services[0].findall('./intent-filter/action')] ==
+       ['android.service.notification.NotificationListenerService'] and not application.findall('receiver'),
+       'Only the Android permission-protected notification listener; no hidden receiver or broad package access')
 record('backup_disabled', application.get(ANDROID + 'allowBackup') == 'false' and
        application.get(ANDROID + 'fullBackupContent') == 'false', 'Manifest backup flags')
 rules = ET.parse(ROOT / 'app/src/main/res/xml/data_extraction_rules.xml').getroot()

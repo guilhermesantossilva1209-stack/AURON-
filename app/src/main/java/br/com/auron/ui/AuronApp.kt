@@ -36,6 +36,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import br.com.auron.domain.Period
+import br.com.auron.automation.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import br.com.auron.ui.theme.AuronColors
 import br.com.auron.ui.theme.AuronTheme
 import br.com.auron.voice.VoiceController
@@ -50,6 +53,7 @@ private val destinations = listOf(
     Destination("tasks", "Tarefas", Icons.Outlined.TaskAlt),
     Destination("history", "Histórico", Icons.Outlined.History),
     Destination("memory", "Memória", Icons.Outlined.Psychology),
+    Destination("automation", "Automações", Icons.Outlined.Bolt),
     Destination("modules", "Módulos", Icons.Outlined.Apps),
     Destination("settings", "Configurações", Icons.Outlined.Settings),
 )
@@ -61,7 +65,13 @@ fun AuronApp(viewModel: AuronViewModel, voice: VoiceController, onExport: () -> 
         val voiceState by voice.state.collectAsStateWithLifecycle()
         val authState by viewModel.auth.state.collectAsStateWithLifecycle()
         val connectionConfig by viewModel.auth.config.collectAsStateWithLifecycle()
+        val localAiConfigured by viewModel.localAiConfigured.collectAsStateWithLifecycle()
+        val localAiError by viewModel.localAiError.collectAsStateWithLifecycle()
+        val automation = viewModel.automation
+        val automationState by automation.state.collectAsStateWithLifecycle()
         val context = LocalContext.current
+        val appLauncher = remember(context) { AppLauncher(context) }
+        var launchableApps by remember { mutableStateOf<List<LaunchableApp>>(emptyList()) }
         val openingPreferences = remember(context) { OpeningPreferences(context) }
         val openingAppearance = remember { openingPreferences.read() }
         val scope = rememberCoroutineScope()
@@ -111,6 +121,35 @@ fun AuronApp(viewModel: AuronViewModel, voice: VoiceController, onExport: () -> 
                 else -> if (destinations.any { it.key == target }) destination = target
             }
         }
+        fun foregroundProfileIsCurrent() = lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED) && voiceProfileIsCurrent()
+        fun speakNotification(text: String) {
+            if (!foregroundProfileIsCurrent()) return
+            val preferences = viewModel.state.value.settings
+            if (preferences.speakReplies) {
+                voice.stopListening()
+                voice.speak(text, preferences.speechRate, preferences.speechPitch, preferences.speechVoiceName, preferences.speechVoiceEngine)
+            } else scope.launch { snackbar.showSnackbar("Ative Falar respostas nas configurações para ler em voz alta. O conteúdo está em Automações.") }
+        }
+        fun openApp(app: LaunchableApp) {
+            if (!foregroundProfileIsCurrent()) return
+            voice.pause()
+            appLauncher.open(app)?.let { message -> scope.launch { snackbar.showSnackbar(message) } }
+        }
+        LaunchedEffect(destination, profileIdentity) {
+            if (destination == "automation" && profileMatches) {
+                launchableApps = withContext(Dispatchers.IO) { appLauncher.listApps() }
+                automation.refreshAccess()
+            }
+        }
+        LaunchedEffect(automation, voice, lifecycle) {
+            automation.notices.collect { notice ->
+                if (foregroundProfileIsCurrent() && notice.profileId == viewModel.state.value.profileId) {
+                    if (!voice.state.value.listening && !voice.state.value.speaking) speakNotification(notice.text)
+                    snackbar.currentSnackbarData?.dismiss()
+                    snackbar.showSnackbar(notice.text)
+                }
+            }
+        }
         LaunchedEffect(viewModel, voice, lifecycle) {
             viewModel.events.collect { event ->
                 when (event) {
@@ -122,6 +161,35 @@ fun AuronApp(viewModel: AuronViewModel, voice: VoiceController, onExport: () -> 
                     is UiEvent.OpenReading -> Unit // The ViewModel owns the persisted day and selected verses.
                     UiEvent.OpenAuth -> { voice.pause(); viewModel.auth.showLogin() }
                     UiEvent.OpenConnections -> { viewModel.auth.clearMessages(); connectionsOpen = true }
+                    is UiEvent.Automation -> if (foregroundProfileIsCurrent() && event.profileId == viewModel.state.value.profileId) {
+                        when (val command = event.command) {
+                            is AutomationCommand.OpenApp -> {
+                                val apps = withContext(Dispatchers.IO) { appLauncher.listApps() }
+                                if (foregroundProfileIsCurrent() && event.profileId == viewModel.state.value.profileId) {
+                                    when (val match = AppResolution.match(command.query, apps)) {
+                                        is AppMatch.Single -> openApp(match.app)
+                                        is AppMatch.Ambiguous -> { navigate("automation"); snackbar.showSnackbar("Há mais de um aplicativo com esse nome. Escolha na lista.") }
+                                        AppMatch.NotFound -> snackbar.showSnackbar("Aplicativo não encontrado entre os aplicativos que o Android permite abrir.")
+                                    }
+                                }
+                            }
+                            AutomationCommand.OpenPanel -> navigate("automation")
+                            AutomationCommand.ReadNotifications -> {
+                                navigate("automation")
+                                automation.refreshAccess()
+                                val readings = automation.state.value.notifications.take(5).mapNotNull { automation.readNotification(it.id) }
+                                if (readings.isEmpty()) snackbar.showSnackbar("Nenhuma notificação autorizada disponível. Confira o acesso e os aplicativos permitidos.")
+                                else speakNotification(readings.joinToString(". ").take(4000))
+                            }
+                            is AutomationCommand.PrepareWhatsAppReply -> {
+                                navigate("automation")
+                                automation.refreshAccess()
+                                val candidates = automation.state.value.notifications.filter { it.isWhatsApp && it.canReply }
+                                if (candidates.size == 1) automation.prepareReply(candidates.single().id, command.text)
+                                else snackbar.showSnackbar("Escolha a notificação do destinatário e prepare a resposta na tela Automações.")
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -270,6 +338,14 @@ fun AuronApp(viewModel: AuronViewModel, voice: VoiceController, onExport: () -> 
                                     Button(onClick = viewModel::retryLoad) { Text("Recarregar dados") }
                                 }
                             } else MemoryScreen(state, { viewModel.saveSettings(state.settings.copy(memoryEnabled = true)) }, viewModel::saveMemory, viewModel::deleteMemory) { navigate("settings") }
+                            "automation" -> AutomationScreen(automationState, launchableApps,
+                                onSave = { if (foregroundProfileIsCurrent()) { voice.pause(); automation.saveSettings(it) } },
+                                onAccessSettings = { if (foregroundProfileIsCurrent()) automation.openAccessSettings()?.let { message -> scope.launch { snackbar.showSnackbar(message) } } },
+                                onOpenApp = ::openApp,
+                                onRead = { if (foregroundProfileIsCurrent()) automation.readNotification(it)?.let(::speakNotification) },
+                                onPrepareReply = { id, text -> if (foregroundProfileIsCurrent()) automation.prepareReply(id, text) },
+                                onConfirmReply = { if (foregroundProfileIsCurrent()) automation.confirmReply(it) },
+                                onCancelReply = automation::cancelReply, onClearResult = automation::clearResult)
                             "modules" -> ModulesScreen(navigate)
                             "settings" -> SettingsScreen(state.settings, viewModel::saveSettings, viewModel::clearChat, { voice.pause(); viewModel.clearAll() }, onExport, authState, state.profileLabel, state.aiStatus,
                                 login = { voice.pause(); viewModel.requestLogin() }, logout = { voice.pause(); viewModel.logout() }, importLegacy = viewModel::importLegacyData,
@@ -280,7 +356,7 @@ fun AuronApp(viewModel: AuronViewModel, voice: VoiceController, onExport: () -> 
                                         voice.speak("Olá, comandante. Sou o AURON. Vamos organizar o dia com calma, clareza e um pouco de bom humor.", preferences.speechRate, preferences.speechPitch, preferences.speechVoiceName, preferences.speechVoiceEngine)
                                     }
                                 }, refreshVoices = voice::refreshVoices, stopVoice = voice::stopSpeaking,
-                                openCloud = { cloudOpen = true })
+                                openCloud = { cloudOpen = true }, openAutomation = { navigate("automation") })
                         }
                     }
                 }
@@ -317,7 +393,12 @@ fun AuronApp(viewModel: AuronViewModel, voice: VoiceController, onExport: () -> 
                         }
                         authState.error?.let { Text(it, color = AuronColors.Danger, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(bottom = 10.dp)) }
                         authState.notice?.let { Text(it, color = AuronColors.Success, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(bottom = 10.dp)) }
-                        Box(Modifier.weight(1f)) { ConnectionSettings(connectionConfig, authState.busy) { config -> scope.launch { viewModel.auth.saveConfig(config) } } }
+                        Box(Modifier.weight(1f)) {
+                            ConnectionSettings(connectionConfig, authState.busy,
+                                onSave = { config -> scope.launch { viewModel.auth.saveConfig(config) } },
+                                localAiConfigured = localAiConfigured, localAiError = localAiError,
+                                onSaveLocalAiAccess = viewModel::saveLocalAiAccess, onClearLocalAiAccess = viewModel::clearLocalAiAccess)
+                        }
                     }
                 }
             }

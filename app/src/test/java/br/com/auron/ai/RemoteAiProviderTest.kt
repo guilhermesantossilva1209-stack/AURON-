@@ -50,4 +50,17 @@ class RemoteAiProviderTest {
             fail("Cancellation must propagate")
         } catch (_: CancellationException) { /* Caller owns cancellation and profile changes. */ }
     }
+
+    @Test fun `local access is independent of login and missing token is actionable before network`() = runBlocking {
+        val provider = RemoteAiProvider("https://auron.example", AiAccessMode.LocalGateway) { null }
+        val result = provider.reply("Olá", AppSettings(useRemoteAi = true)) as ProviderResult.Unavailable
+        assertTrue(result.reason.contains("modo local não exige conta"))
+        assertTrue(result.reason.contains("token pessoal"))
+        assertTrue(!provider.isDemo)
+    }
+
+    @Test fun `local credential is never silently treated as an account session`() = runBlocking {
+        val provider = RemoteAiProvider("https://auron.example") { "auron_local_" + "a".repeat(43) }
+        assertTrue(provider.reply("Olá", AppSettings(useRemoteAi = true)) is ProviderResult.Unavailable)
+    }
 }

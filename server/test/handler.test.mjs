@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
 import { Readable } from 'node:stream';
 import test from 'node:test';
+import { createHash } from 'node:crypto';
 import { createAuronServer } from '../server.mjs';
 
 // Socket-free contract tests: the real HTTP request handler consumes Readable
@@ -13,6 +14,8 @@ const HISTORY = 'HISTORICO_PRIVADO_FIXTURE_01';
 const MEMORY = 'MEMORIA_PRIVADA_FIXTURE_02';
 const OWNER_ID = '11111111-1111-4111-8111-111111111111';
 const OTHER_ID = '22222222-2222-4222-8222-222222222222';
+const LOCAL_TOKEN = `auron_local_${'a'.repeat(43)}`;
+const LOCAL_HASH = createHash('sha256').update(LOCAL_TOKEN).digest('hex');
 const CONFIG = {
   supabaseUrl: 'https://auth.example',
   supabaseKey: 'fixture-public-key',
@@ -400,4 +403,75 @@ test('handler: configuration rejects unsafe endpoints and privileged Supabase ke
   assert.throws(() => createAuronServer({ ...CONFIG, supabaseKey: 'sb_secret_fixture' }));
   const payload = Buffer.from(JSON.stringify({ role: 'service_role' })).toString('base64url');
   assert.throws(() => createAuronServer({ ...CONFIG, supabaseKey: `header.${payload}.signature` }));
+});
+
+test('handler: configured local access works without Supabase and never forwards its token', async () => {
+  const app = fixture({ config: {
+    supabaseUrl: undefined, supabaseKey: undefined, ownerUserId: undefined, localTokenHash: LOCAL_HASH,
+  } });
+  const result = await app.request({}, { headers: { authorization: `AuronLocal ${LOCAL_TOKEN}` } });
+  assert.equal(result.status, 200);
+  assert.equal(app.calls.auth.length, 0);
+  assert.equal(app.calls.provider.length, 1);
+  assert.ok(!JSON.stringify(app.calls.provider).includes(LOCAL_TOKEN));
+  assert.ok(!JSON.stringify(result).includes(LOCAL_TOKEN));
+});
+
+test('handler: no configured access method, malformed hashes and partial Supabase settings fail closed', () => {
+  const localOnly = { ...CONFIG, supabaseUrl: undefined, supabaseKey: undefined, ownerUserId: undefined };
+  assert.throws(() => createAuronServer(localOnly), /Configure owner/);
+  for (const localTokenHash of [42, 'not-a-hash', 'a'.repeat(63), `${LOCAL_HASH}\n`]) {
+    assert.throws(() => createAuronServer({ ...localOnly, localTokenHash }), /SHA-256/);
+  }
+  assert.throws(() => createAuronServer({ ...localOnly, localTokenHash: LOCAL_HASH, supabaseUrl: CONFIG.supabaseUrl }), /OWNER_USER_ID/);
+});
+
+test('handler: disabled, wrong and malformed local access never reaches authentication or inference', async () => {
+  const disabled = fixture();
+  errorIs(await disabled.request({}, { headers: { authorization: `AuronLocal ${LOCAL_TOKEN}` } }), 401);
+  assert.deepEqual(disabled.calls, { auth: [], provider: [] });
+  const app = fixture({ config: { localTokenHash: LOCAL_HASH } });
+  for (const authorization of [
+    `AuronLocal auron_local_${'b'.repeat(43)}`, 'AuronLocal auron_local_short',
+    'AuronLocal sb_secret_wrong', `Bearer ${LOCAL_TOKEN}`, 'AuronLocal ',
+  ]) errorIs(await app.request({}, { headers: { authorization } }), 401, [authorization]);
+  assert.deepEqual(app.calls, { auth: [], provider: [] });
+});
+
+test('handler: a local-only gateway cannot accept bearer sessions or anonymous requests', async () => {
+  const app = fixture({ config: {
+    supabaseUrl: '', supabaseKey: '', ownerUserId: '', localTokenHash: LOCAL_HASH,
+  } });
+  errorIs(await app.request(), 401);
+  errorIs(await app.request({}, { token: null }), 401);
+  assert.deepEqual(app.calls, { auth: [], provider: [] });
+});
+
+test('handler: local and authenticated owner calls share the same rate budget', async () => {
+  const app = fixture({ config: { localTokenHash: LOCAL_HASH, rateLimit: 1 } });
+  assert.equal((await app.request({}, { headers: { authorization: `AuronLocal ${LOCAL_TOKEN}` } })).status, 200);
+  errorIs(await app.request(), 429);
+  errorIs(await app.request({}, { token: 'token-B' }), 403);
+  assert.equal(app.calls.provider.length, 1);
+});
+
+test('handler: local mode preserves independent consent for history and memory', async () => {
+  const app = fixture({ config: { localTokenHash: LOCAL_HASH } });
+  const headers = { authorization: `AuronLocal ${LOCAL_TOKEN}` };
+  const context = { history: [{ role: 'user', text: HISTORY }], memories: [{ title: 'Privado', content: MEMORY }] };
+  assert.equal((await app.request(context, { headers })).status, 200);
+  assert.ok(!app.calls.provider[0].body.includes(HISTORY));
+  assert.ok(!app.calls.provider[0].body.includes(MEMORY));
+  assert.equal((await app.request({ ...context, shareMemory: true }, { headers })).status, 200);
+  assert.ok(!app.calls.provider[1].body.includes(HISTORY));
+  assert.ok(app.calls.provider[1].body.includes(MEMORY));
+  assert.equal(app.calls.auth.length, 0);
+});
+
+test('handler: replacing local token hash revokes the previous personal credential', async () => {
+  const nextToken = `auron_local_${'b'.repeat(43)}`;
+  const app = fixture({ config: { localTokenHash: createHash('sha256').update(nextToken).digest('hex') } });
+  errorIs(await app.request({}, { headers: { authorization: `AuronLocal ${LOCAL_TOKEN}` } }), 401);
+  assert.equal((await app.request({}, { headers: { authorization: `AuronLocal ${nextToken}` } })).status, 200);
+  assert.equal(app.calls.provider.length, 1);
 });

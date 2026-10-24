@@ -1,12 +1,12 @@
 package br.com.auron.ui
 
-/** Camera coordinates for the unmodified 853×1280 owner-provided illustration. */
+/** Camera coordinates for the unmodified 1067×1280 owner-provided illustration. */
 internal object OpeningCamera {
-    const val IMAGE_WIDTH = 853f
+    const val IMAGE_WIDTH = 1067f
     const val IMAGE_HEIGHT = 1280f
     // Center between the chest emblem and the AURON lettering, not the face.
-    const val CHEST_X = 0.545f
-    const val CHEST_Y = 0.413f
+    const val CHEST_X = 0.542f
+    const val CHEST_Y = 0.464f
 
     data class Frame(
         val scale: Float,

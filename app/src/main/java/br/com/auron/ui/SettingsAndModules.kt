@@ -42,6 +42,7 @@ internal fun SettingsScreen(
     refreshVoices: () -> Unit,
     stopVoice: () -> Unit,
     openCloud: () -> Unit,
+    openAutomation: () -> Unit = {},
 ) {
     var draft by remember(settings) { mutableStateOf(settings) }
     var confirming by remember { mutableStateOf<String?>(null) }
@@ -70,6 +71,12 @@ internal fun SettingsScreen(
             }
         }
         item {
+            SettingsPanel("Automações Android") {
+                Text("Abrir aplicativos, consultar notificações permitidas e confirmar respostas disponíveis. Você controla o acesso pelo Android.", style = MaterialTheme.typography.bodyMedium, color = AuronColors.Muted)
+                OutlinedButton(onClick = openAutomation, modifier = Modifier.fillMaxWidth()) { Text("Configurar automações e permissões") }
+            }
+        }
+        item {
             SettingsPanel("Identidade") {
                 OutlinedTextField(value = draft.userName, onValueChange = { if (it.length <= 60) draft = draft.copy(userName = it) }, label = { Text("Como devo chamar você?") }, singleLine = true, modifier = Modifier.fillMaxWidth().testTag("settings_name"), supportingText = { Text("Seu nome ou um tratamento, como comandante.") })
             }
@@ -89,7 +96,7 @@ internal fun SettingsScreen(
             SettingsPanel("Inteligência & consentimento") {
                 Text("Estado: $aiStatus", style = MaterialTheme.typography.bodyMedium, color = AuronColors.Gold)
                 Spacer(Modifier.height(14.dp))
-                SettingToggle("Permitir IA remota", "Autoriza enviar as próximas mensagens ao backend HTTPS configurado e ao provedor de IA dele. Requer conexão e sessão válidas; custos dependem do provedor configurado. Nenhuma API é contratada pelo aplicativo.", draft.useRemoteAi) { draft = draft.copy(useRemoteAi = it) }
+                SettingToggle("Permitir IA remota", "Autoriza enviar as próximas mensagens ao backend HTTPS configurado e ao provedor de IA dele. Requer conexão e sessão válida ou acesso pessoal do servidor no modo local; custos dependem do provedor configurado. Nenhuma API é contratada pelo aplicativo.", draft.useRemoteAi) { draft = draft.copy(useRemoteAi = it) }
                 Spacer(Modifier.height(18.dp))
                 SettingToggle("Compartilhar histórico com a IA", "Autoriza incluir um trecho recente desta conversa nas próximas solicitações remotas. Desativado, somente a mensagem atual e as preferências de personalidade são utilizadas.", draft.shareHistoryWithAi) { draft = draft.copy(shareHistoryWithAi = it) }
                 Spacer(Modifier.height(18.dp))
@@ -115,7 +122,7 @@ internal fun SettingsScreen(
                 PercentageSlider("Sarcasmo leve", draft.sarcasm) { draft = draft.copy(sarcasm = it) }
                 PercentageSlider("Formalidade", draft.formality) { draft = draft.copy(formality = it) }
                 PercentageSlider("Proatividade", draft.proactivity) { draft = draft.copy(proactivity = it) }
-                Text("Lembretes e notificações proativas ainda estão planejados.", style = MaterialTheme.typography.bodySmall, color = AuronColors.Muted)
+                Text("Avisos de notificações autorizadas são configurados em Automações. Lembretes agendados continuam planejados.", style = MaterialTheme.typography.bodySmall, color = AuronColors.Muted)
             }
         }
         item {
@@ -182,7 +189,6 @@ private fun PercentageSlider(title: String, value: Int, change: (Int) -> Unit) {
 
 private data class PlannedModule(val name: String, val tag: String, val icon: ImageVector, val detail: String)
 private val plannedModules = listOf(
-    PlannedModule("Automações Android", "FASE 3", Icons.Outlined.Bolt, "Intents, lembretes e notificações autorizadas. Sem ações ocultas ou controle de outros aplicativos nesta versão."),
     PlannedModule("Estudos", "FASE 4", Icons.Outlined.School, "Ciclos prolongados de aprendizagem, foco e revisões. Prioridade inicial: social media e edição audiovisual."),
     PlannedModule("Clau Estética", "FASE 4", Icons.Outlined.AutoAwesome, "Calendário editorial, campanhas, roteiros e métricas. APIs oficiais de redes sociais poderão ser integradas futuramente."),
     PlannedModule("Editor audiovisual premium", "FASE 4", Icons.Outlined.Movie, "Briefing, storyboard e etapas de edição. Preparação para ferramentas como Remotion; sem análise ou renderização de vídeos nesta versão."),
@@ -206,6 +212,7 @@ internal fun ModulesScreen(navigate: (String) -> Unit) {
                 OutlinedButton(onClick = { navigate("tasks") }, modifier = Modifier.weight(1f), contentPadding = PaddingValues(horizontal = 8.dp, vertical = 12.dp)) { Text("Tarefas") }
             }
             OutlinedButton(onClick = { navigate("memory") }, modifier = Modifier.fillMaxWidth()) { Text("Memória sob seu controle") }
+            OutlinedButton(onClick = { navigate("automation") }, modifier = Modifier.fillMaxWidth()) { Text("Automações Android e notificações") }
             Text("Leitura bíblica disponível pela atividade da rotina matinal. IA remota e conta exigem configuração em Configurações.", style = MaterialTheme.typography.bodySmall, color = AuronColors.Muted)
             Spacer(Modifier.height(22.dp))
             Text("MAPA DE EVOLUÇÃO · AINDA NÃO IMPLEMENTADO", style = MaterialTheme.typography.labelMedium, color = AuronColors.Muted)

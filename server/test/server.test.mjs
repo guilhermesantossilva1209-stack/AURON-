@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import test from 'node:test';
+import { createHash } from 'node:crypto';
 import { createAuronServer } from '../server.mjs';
 
 // These are local HTTP fixtures. They verify the gateway contract, not a live
@@ -11,6 +12,8 @@ const PRIVATE_HISTORY = 'HISTORICO_PRIVADO_EXEMPLO_9fda';
 const PRIVATE_MEMORY = 'MEMORIA_PRIVADA_EXEMPLO_2ed1';
 const OWNER_ID = '11111111-1111-4111-8111-111111111111';
 const OTHER_ID = '22222222-2222-4222-8222-222222222222';
+const LOCAL_TOKEN = `auron_local_${'a'.repeat(43)}`;
+const LOCAL_HASH = createHash('sha256').update(LOCAL_TOKEN).digest('hex');
 
 async function listen(server) {
   await new Promise((resolve, reject) => {
@@ -324,4 +327,34 @@ test('OpenAI-compatible provider receives the configured key only at its upstrea
   assert.ok(!JSON.stringify(body).includes(key));
   assert.ok(!JSON.stringify(request.body).includes(key));
   assert.ok(!JSON.stringify(request).includes('token-A'));
+});
+
+test('local owner token authorizes real HTTP transport without a Supabase account', async (t) => {
+  const app = await fixture(t, { config: {
+    supabaseUrl: undefined, supabaseKey: undefined, ownerUserId: undefined, localTokenHash: LOCAL_HASH,
+  } });
+  const response = await fetch(`${app.url}/v1/chat`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', authorization: `AuronLocal ${LOCAL_TOKEN}` },
+    body: JSON.stringify({ input: INPUT, shareHistory: false, shareMemory: false }),
+  });
+  assert.equal(response.status, 200);
+  assert.equal((await response.json()).text, 'Resposta de fixture local: organize um bloco de estudo.');
+  assert.equal(app.calls.auth.length, 0);
+  assert.equal(app.calls.provider.length, 1);
+  assert.ok(!JSON.stringify(app.calls.provider).includes(LOCAL_TOKEN));
+  await safeError(await app.chat(), 401);
+  await safeError(await app.chat({}, null), 401);
+});
+
+test('invalid local credentials never reach an upstream over HTTP', async (t) => {
+  const app = await fixture(t, { config: { localTokenHash: LOCAL_HASH } });
+  const response = await fetch(`${app.url}/v1/chat`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', authorization: `AuronLocal auron_local_${'b'.repeat(43)}` },
+    body: JSON.stringify({ input: INPUT }),
+  });
+  await safeError(response, 401, [LOCAL_TOKEN]);
+  await safeError(await app.chat({}, LOCAL_TOKEN), 401);
+  assert.deepEqual(app.calls, { auth: [], provider: [] });
 });

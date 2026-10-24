@@ -55,12 +55,20 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        viewModel.automation.setForeground(true)
+        viewModel.automation.refreshAccess()
         viewModel.refreshDay()
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
         exportProfileId?.let { outState.putString("export_profile", it) }
         super.onSaveInstanceState(outState)
+    }
+
+    override fun onPause() {
+        viewModel.automation.setForeground(false)
+        if (::voice.isInitialized) voice.pause()
+        super.onPause()
     }
 
     override fun onStop() {

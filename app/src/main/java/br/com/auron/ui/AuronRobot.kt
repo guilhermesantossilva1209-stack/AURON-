@@ -290,7 +290,7 @@ internal fun AuronIntro(deadlineElapsedMs: Long? = null, onSkip: () -> Unit) {
             if (picture != null) {
                 Image(
                     bitmap = picture,
-                    contentDescription = "AURON: imagem original do robô preto e dourado, com painéis holográficos",
+                    contentDescription = "AURON: imagem oficial do robô preto e dourado de corpo inteiro, em fundo preto",
                     contentScale = ContentScale.Fit,
                     modifier = Modifier.fillMaxSize().testTag("intro_reference").graphicsLayer {
                         val frame = OpeningCamera.frame(size.width, size.height, camera.value)

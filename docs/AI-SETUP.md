@@ -1,10 +1,11 @@
-# IA conectada — AURON 0.2
+# IA conectada — AURON 0.2.1
 
-A implementação conecta o aplicativo a um servidor próprio, autenticado pelo
-Supabase, que consulta Ollama ou uma API compatível com Chat Completions. Nenhum
-projeto Supabase, modelo, domínio, servidor ou chave de IA foi contratado ou
-configurado durante esta entrega. Sem esses serviços, continue no modo local
-demonstrativo. O código de integração não significa que existe um modelo conectado.
+A implementação conecta o aplicativo a um servidor próprio que consulta Ollama
+ou uma API compatível com Chat Completions. Há dois acessos independentes: sessão
+Supabase do proprietário ou token pessoal do gateway para o modo local sem conta.
+Um modelo, domínio e gateway de IA ainda precisam ser configurados pelo proprietário.
+Sem isso, comandos e rotinas locais continuam disponíveis; respostas demonstrativas
+continuam identificadas. O código de integração não significa que existe um modelo conectado.
 
 ## Arquitetura e privacidade
 
@@ -14,6 +15,9 @@ Android -- HTTPS + sessão Supabase --> AURON Node
                                      |-- exige o UUID do proprietário configurado
                                      |-- Ollama no próprio servidor
                                      `-- ou API compatível configurada pelo administrador
+
+Android no modo local -- HTTPS + token pessoal --> mesmo gateway/modelo
+                                                 (sem conta Supabase)
 ```
 
 O Android envia a mensagem atual e quatro números de personalidade quando a IA
@@ -36,8 +40,10 @@ que um modelo nunca produza texto incorreto. **Respostas da IA são somente text
 sem ferramentas ou execução automática de comandos no Android.
 
 O backend não mantém conversas nem registra conteúdo, tokens ou chaves em logs.
-Ele mantém temporariamente contadores de solicitações por usuário/IP. O Supabase
-recebe o token para autenticação; o modelo recebe a mensagem e o contexto autorizado.
+Ele mantém temporariamente contadores de solicitações do proprietário e por IP.
+No modo autenticado, o Supabase recebe somente a sessão para validá-la. No modo
+local, o gateway valida o token pessoal sem chamar o Supabase. O token pessoal
+nunca é enviado ao modelo. O modelo recebe a mensagem e o contexto autorizado.
 As políticas de retenção do provedor escolhido e de qualquer proxy ou hospedagem
 precisam ser avaliadas pelo administrador. O histórico local do AURON continua
 sob os controles de exportação e exclusão do aplicativo.
@@ -50,7 +56,7 @@ Ollama exige uma máquina capaz de executar o modelo escolhido. Neste desenho,
 Sem computador, use um servidor que você já possua ou providencie hospedagem
 compatível conscientemente; instalar o APK sozinho não instala o modelo.
 
-1. Configure um projeto Supabase para as contas e obtenha sua URL HTTPS e chave
+1. Para o modo autenticado, configure um projeto Supabase e obtenha sua URL HTTPS e chave
    publicável/`anon`. Nunca use `service_role` ou `sb_secret_` no app ou nesta
    configuração: o backend rejeita essas chaves. Veja a documentação de autenticação
    para cadastro, confirmação de e-mail e recuperação de senha.
@@ -62,7 +68,7 @@ compatível conscientemente; instalar o APK sozinho não instala o modelo.
    Substitua todos os valores de exemplo. `AI_MODEL` deve corresponder a um modelo
    realmente instalado. Não coloque chaves em commits, prints ou no código Android.
 4. Depois de criar e confirmar a conta autorizada, copie seu UUID em
-   **Authentication → Users → User UID** para `OWNER_USER_ID`. O gateway não inicia
+   **Authentication → Users → User UID** para `OWNER_USER_ID`. O modo de sessão não inicia
    sem esse UUID válido. Ele consulta a sessão real no Supabase e rejeita outra
    conta antes de enviar qualquer mensagem ao modelo. Um ID enviado no corpo da
    requisição não altera essa autorização. O UUID é um identificador, não uma
@@ -74,6 +80,7 @@ Configuração Ollama:
 SUPABASE_URL=https://SEU_PROJETO.supabase.co
 SUPABASE_PUBLISHABLE_KEY=SUA_CHAVE_PUBLICAVEL_OU_ANON
 OWNER_USER_ID=UUID_REAL_DO_PROPRIETARIO
+LOCAL_ACCESS_TOKEN_SHA256=
 AI_PROVIDER=ollama
 AI_PROVIDER_URL=http://127.0.0.1:11434
 AI_MODEL=NOME_EXATO_DO_MODELO_INSTALADO
@@ -106,11 +113,45 @@ deve ser publicado diretamente na internet.
 
 `GET /health` retorna `{"status":"ok"}` sem autenticação. Isso confirma somente
 que o processo responde; não verifica sessão, disponibilidade do modelo ou inferência.
-`POST /v1/chat` exige `Authorization: Bearer <access_token>` de uma sessão validada
-pelo projeto Supabase configurado. A chave publicável sozinha não autoriza inferência.
-Nesta edição pessoal, a sessão também precisa pertencer ao `OWNER_USER_ID`.
+`POST /v1/chat` aceita `Authorization: Bearer <access_token>` de uma sessão validada
+pelo projeto Supabase configurado, ou `Authorization: AuronLocal <token>` quando
+esse acesso foi provisionado explicitamente. A chave publicável sozinha não autoriza
+inferência. No modo de sessão, o usuário também precisa ser o `OWNER_USER_ID`.
 Criar uma conta no mesmo projeto não concede acesso ao servidor de IA. A política
 de cadastro inicial e o Auth Hook estão em [AUTH-SETUP.md](AUTH-SETUP.md).
+
+## IA no modo local, sem criar conta
+
+O modo local não exige login, mas um servidor de IA exposto à rede não pode ficar
+sem proteção. A credencial abaixo é exclusiva do gateway AURON e permite inferência;
+não concede acesso ao banco Supabase nem substitui a chave do provedor.
+
+1. Na sua máquina confiável, dentro de `server/`, execute:
+
+   ```bash
+   node generate-local-access.mjs
+   ```
+
+2. O comando gera 32 bytes aleatórios e exibe um token `auron_local_…` e seu hash.
+   Guarde o token em local privado para inserir no tablet. Copie **somente** a linha
+   `LOCAL_ACCESS_TOKEN_SHA256=…` para o `.env` privado do servidor e reinicie-o.
+   Não envie esses valores na conversa nem inclua o token no código, em logs,
+   capturas ou commits. O repositório contém apenas o gerador, sem uma credencial real.
+3. Para usar apenas o modo local, deixe `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`
+   e `OWNER_USER_ID` vazios no `.env`. Para aceitar ambos os modos, configure também
+   os três campos reais do Supabase. Uma configuração parcial falha ao iniciar;
+   nenhum modo é ativado como alternativa automática quando o outro falha.
+4. No tablet em modo local, configure a URL HTTPS do gateway e o token pessoal
+   na área de conexões. Ative a IA remota nas preferências do perfil local.
+   O token é criptografado com Android Keystore, excluído dos backups e vinculado
+   à origem HTTPS. Mudar a URL não encaminha o token antigo a outro servidor.
+5. Para revogar o acesso, gere um novo token/hash, substitua o hash no servidor e
+   reinicie o processo. Remova o token antigo das conexões do tablet. A remoção
+   dessa credencial não apaga rotinas, memórias, sessão ou preferências.
+
+O gateway compara o hash em tempo constante, limita requisições e compartilha o
+mesmo orçamento entre os dois modos. Ainda é necessário instalar/configurar um
+modelo no servidor: “modo local sem conta” não significa inferência offline no tablet.
 
 ## Alternativa: API compatível
 
@@ -139,11 +180,13 @@ mas não substituem um limite de gastos no provedor.
 
 ## Configuração no tablet
 
-1. Abra as conexões e informe a URL Supabase, chave publicável e a URL HTTPS de
+1. Abra as conexões e informe a URL HTTPS de
    origem do backend, por exemplo `https://auron.seudominio.example`, **sem** `/v1/chat`,
    parâmetros, fragmentos ou credenciais na URL.
-2. Entre em sua conta. Tokens são obtidos/renovados pela camada de autenticação;
-   o Android não solicita nem armazena a chave do provedor de IA.
+2. Para o modo autenticado, configure URL/chave pública Supabase e entre na sua
+   conta. Para o modo local, configure o token pessoal conforme a seção anterior.
+   Sessões são obtidas/renovadas pela camada de autenticação; o Android nunca
+   solicita nem armazena a chave do provedor de IA.
 3. Ative IA remota nas preferências. Compartilhe histórico e memória somente se
    desejar. Esses controles ficam desligados por padrão.
 4. Envie uma pergunta livre. Comandos locais conhecidos continuam no aplicativo;
@@ -154,10 +197,10 @@ mas não substituem um limite de gastos no provedor.
 
 ## Limites operacionais
 
-- Toda inferência valida a sessão pelo Supabase e compara seu UUID com
-  `OWNER_USER_ID` antes de enviar dados ao modelo. Erro, timeout, resposta sem ID
-  válido ou conta diferente bloqueiam a chamada ao modelo.
-- Padrão de 20 pedidos por minuto por usuário autenticado, 4 requisições simultâneas
+- Toda inferência autenticada valida a sessão pelo Supabase e compara seu UUID com
+  `OWNER_USER_ID`. No modo local, valida-se o token pessoal provisionado. Erro,
+  timeout, credencial ausente/inválida ou conta diferente bloqueiam a inferência.
+- Padrão de 20 pedidos por minuto para o proprietário (ambos os modos), 4 requisições simultâneas
   e 120 tentativas por minuto por endereço de conexão. `X-Forwarded-For` não é
   confiado; atrás de um proxy, o limite por conexão pode ser compartilhado.
 - Contadores ficam na memória deste processo, são limitados em quantidade e
@@ -192,14 +235,17 @@ sem abrir sockets. Essa suíte permite verificar autenticação, consentimentos,
 limites, isolamento e erros quando o ambiente proíbe `listen()`. Ela não verifica
 rede, TLS, conectividade ou qualidade de respostas do modelo.
 
-Nesta sessão, a tentativa da suíte HTTP foi bloqueada por
-`listen EPERM: operation not permitted 127.0.0.1`. Os resultados efetivos da suíte
-sem sockets e do restante do projeto devem constar do relatório de validação.
-Testes JVM cobrem o construtor de contexto e as recusas do cliente antes da rede;
-eles não validam `HttpsURLConnection` em um Android real.
+O ambiente local desta execução bloqueia a suíte HTTP com
+`listen EPERM: operation not permitted 127.0.0.1`; o workflow GitHub executa essa
+suíte em um runner com loopback disponível. Consulte o relatório de validação
+para os resultados efetivamente obtidos. Testes JVM cobrem o contexto e a separação
+de credenciais antes da rede. Testes instrumentados de `LocalAiAccessStoreTest`
+verificam criptografia, persistência, vínculo à origem e remoção isolada; só contam
+como executados quando houver resultado de emulador/dispositivo, não apenas compilação.
 
 Antes de considerar a integração validada, execute no seu ambiente: login real,
 pergunta livre ao modelo realmente instalado, histórico/memória com consentimentos
 ligados e desligados, token expirado/revogado, backend e modelo indisponíveis,
 timeout, cancelamento ao trocar de perfil e rejeição de outra conta antes da inferência.
+No modo local, teste token correto, inválido, removido/revogado e mudança da URL.
 Não há evidência de inferência real ou validação TLS no tablet nesta entrega.

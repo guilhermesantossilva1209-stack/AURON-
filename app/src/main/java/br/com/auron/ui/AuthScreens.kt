@@ -50,6 +50,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
@@ -64,6 +66,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import br.com.auron.ai.AiAccess
 import br.com.auron.auth.AuthPolicies
 import br.com.auron.auth.AuthState
 import br.com.auron.auth.ConnectionConfig
@@ -91,9 +94,14 @@ fun AuthScreen(
     var ownerPolicyConfirmed by remember { mutableStateOf(false) }
     var validation by remember { mutableStateOf<String?>(null) }
     val focus = LocalFocusManager.current
-    val available = configured && state.ready && !state.busy
+    val passwordFocus = remember { FocusRequester() }
+    val confirmationFocus = remember { FocusRequester() }
+    // Editing the form does not contact a service. Only submission needs a ready connection.
+    val editable = !state.busy
+    val canSubmit = configured && state.ready && editable
 
     fun changePanel(next: AccessPanel) {
+        focus.clearFocus()
         panel = next
         password = ""
         confirmation = ""
@@ -104,7 +112,7 @@ fun AuthScreen(
     }
 
     fun submit() {
-        if (!available) return
+        if (!canSubmit) return
         val address = email.trim()
         validation = when {
             !Patterns.EMAIL_ADDRESS.matcher(address).matches() -> "Digite um e-mail válido."
@@ -159,10 +167,15 @@ fun AuthScreen(
                     )
                     if (!configured) {
                         AuthMessage(
-                            "Acesso por conta indisponível: nenhum serviço de autenticação está configurado. Você pode configurar a conexão ou usar o modo local.",
+                            "Nenhum serviço de autenticação está configurado. Os campos podem ser preenchidos, mas entrar, criar conta e recuperar senha exigem configurar a conexão. O modo local continua disponível.",
                             isError = false,
                             modifier = Modifier.testTag("auth_unconfigured"),
                         )
+                        TextButton(
+                            onClick = { focus.clearFocus(); onConfigure() },
+                            enabled = editable,
+                            modifier = Modifier.testTag("auth_configure_service"),
+                        ) { Text("Configurar autenticação") }
                     }
                     if (!state.ready) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -184,9 +197,12 @@ fun AuthScreen(
                         onValueChange = { if (it.length <= 254) { email = it; validation = null } },
                         label = { Text("E-mail") },
                         singleLine = true,
-                        enabled = available,
+                        enabled = editable,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = if (panel == AccessPanel.Reset) ImeAction.Done else ImeAction.Next),
-                        keyboardActions = KeyboardActions(onDone = { submit() }),
+                        keyboardActions = KeyboardActions(
+                            onNext = { if (panel != AccessPanel.Reset) passwordFocus.requestFocus() },
+                            onDone = { submit() },
+                        ),
                         modifier = Modifier.fillMaxWidth().testTag("auth_email"),
                     )
                     if (panel != AccessPanel.Reset) {
@@ -194,13 +210,16 @@ fun AuthScreen(
                             value = password,
                             onValueChange = { if (it.length <= 1024) { password = it; validation = null } },
                             label = { Text("Senha") },
-                            enabled = available,
+                            enabled = editable,
                             singleLine = true,
                             visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = if (panel == AccessPanel.Register) ImeAction.Next else ImeAction.Done),
-                            keyboardActions = KeyboardActions(onDone = { submit() }),
+                            keyboardActions = KeyboardActions(
+                                onNext = { if (panel == AccessPanel.Register) confirmationFocus.requestFocus() },
+                                onDone = { submit() },
+                            ),
                             trailingIcon = {
-                                IconButton(onClick = { passwordVisible = !passwordVisible }, enabled = available) {
+                                IconButton(onClick = { passwordVisible = !passwordVisible }, enabled = editable) {
                                     Icon(if (passwordVisible) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility, if (passwordVisible) "Ocultar senha" else "Mostrar senha")
                                 }
                             },
@@ -209,7 +228,7 @@ fun AuthScreen(
                                     Text("Mínimo de 8 caracteres. O serviço pode exigir uma senha mais forte.")
                                 }
                             },
-                            modifier = Modifier.fillMaxWidth().testTag("auth_password"),
+                            modifier = Modifier.fillMaxWidth().focusRequester(passwordFocus).testTag("auth_password"),
                         )
                     }
                     if (panel == AccessPanel.Register) {
@@ -217,18 +236,18 @@ fun AuthScreen(
                             value = confirmation,
                             onValueChange = { if (it.length <= 1024) { confirmation = it; validation = null } },
                             label = { Text("Confirmar senha") },
-                            enabled = available,
+                            enabled = editable,
                             singleLine = true,
                             visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
                             keyboardActions = KeyboardActions(onDone = { submit() }),
-                            modifier = Modifier.fillMaxWidth().testTag("auth_password_confirmation"),
+                            modifier = Modifier.fillMaxWidth().focusRequester(confirmationFocus).testTag("auth_password_confirmation"),
                         )
                         Row(verticalAlignment = Alignment.Top) {
                             Checkbox(
                                 checked = ownerPolicyConfirmed,
                                 onCheckedChange = { ownerPolicyConfirmed = it; validation = null },
-                                enabled = available,
+                                enabled = editable,
                                 modifier = Modifier.testTag("auth_owner_policy_confirmed").semantics { contentDescription = "Confirmar configuração do cadastro privado no Supabase" },
                             )
                             Text(
@@ -241,7 +260,7 @@ fun AuthScreen(
                             Checkbox(
                                 checked = acceptedAccountTransfer,
                                 onCheckedChange = { acceptedAccountTransfer = it; validation = null },
-                                enabled = available,
+                                enabled = editable,
                                 modifier = Modifier.testTag("auth_registration_consent").semantics { contentDescription = "Autorizar envio dos dados para criar a conta" },
                             )
                             Text(
@@ -258,7 +277,7 @@ fun AuthScreen(
                     validation?.let { AuthMessage(it, isError = true) }
                     state.error?.let { AuthMessage(it, isError = true, modifier = Modifier.testTag("auth_error")) }
                     state.notice?.let { AuthMessage(it, isError = false, modifier = Modifier.testTag("auth_notice")) }
-                    Button(onClick = { submit() }, enabled = available, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("auth_submit")) {
+                    Button(onClick = { submit() }, enabled = canSubmit, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("auth_submit")) {
                         if (state.busy) {
                             CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onSurface)
                             Spacer(Modifier.width(10.dp))
@@ -270,8 +289,8 @@ fun AuthScreen(
                         })
                     }
                     if (panel == AccessPanel.Login) {
-                        TextButton(onClick = { changePanel(AccessPanel.Reset) }, enabled = available, modifier = Modifier.fillMaxWidth()) { Text("Esqueci minha senha") }
-                        OutlinedButton(onClick = { changePanel(AccessPanel.Register) }, enabled = state.ready && !state.busy, modifier = Modifier.fillMaxWidth()) { Text("Primeiro acesso do proprietário") }
+                        TextButton(onClick = { changePanel(AccessPanel.Reset) }, enabled = editable, modifier = Modifier.fillMaxWidth()) { Text("Esqueci minha senha") }
+                        OutlinedButton(onClick = { changePanel(AccessPanel.Register) }, enabled = editable, modifier = Modifier.fillMaxWidth()) { Text("Primeiro acesso do proprietário") }
                     } else {
                         TextButton(onClick = { changePanel(AccessPanel.Login) }, enabled = !state.busy, modifier = Modifier.fillMaxWidth()) {
                             Icon(Icons.Outlined.ArrowBack, null, Modifier.size(18.dp))
@@ -285,7 +304,7 @@ fun AuthScreen(
                         Spacer(Modifier.width(8.dp))
                         Text("Continuar no modo local")
                     }
-                    TextButton(onClick = onConfigure, enabled = !state.busy, modifier = Modifier.fillMaxWidth().testTag("auth_configure")) {
+                    TextButton(onClick = { focus.clearFocus(); onConfigure() }, enabled = editable, modifier = Modifier.fillMaxWidth().testTag("auth_configure")) {
                         Icon(Icons.Outlined.Settings, null, Modifier.size(18.dp))
                         Spacer(Modifier.width(8.dp))
                         Text("Configurar conexões")
@@ -353,13 +372,26 @@ private fun AuthMessage(message: String, isError: Boolean, modifier: Modifier = 
 
 /** Saves local connection settings only; no network call or AI consent is performed here. */
 @Composable
-fun ConnectionSettings(config: ConnectionConfig, busy: Boolean, onSave: (ConnectionConfig) -> Unit) {
+fun ConnectionSettings(
+    config: ConnectionConfig,
+    busy: Boolean,
+    onSave: (ConnectionConfig) -> Unit,
+    localAiConfigured: Boolean = false,
+    localAiError: String? = null,
+    onSaveLocalAiAccess: (String, String) -> Unit = { _, _ -> },
+    onClearLocalAiAccess: () -> Unit = {},
+) {
     var supabaseUrl by remember(config) { mutableStateOf(config.supabaseUrl) }
     var publicKey by remember(config) { mutableStateOf(config.supabasePublishableKey) }
     var aiBaseUrl by remember(config) { mutableStateOf(config.aiBaseUrl) }
     var validation by remember(config) { mutableStateOf<String?>(null) }
+    // The credential is entered at runtime and never placed in saved-instance state.
+    // Changing the saved endpoint discards an unfinished credential for the old host.
+    var localToken by remember(config.aiBaseUrl) { mutableStateOf("") }
+    var localValidation by remember(config.aiBaseUrl) { mutableStateOf<String?>(null) }
     val draft = ConnectionConfig(supabaseUrl.trim().trimEnd('/'), publicKey.trim(), aiBaseUrl.trim().trimEnd('/'))
     val dirty = draft != config
+    val savedAiEndpoint = config.aiBaseUrl.isNotBlank() && draft.aiBaseUrl == config.aiBaseUrl
     val focus = LocalFocusManager.current
 
     Column(
@@ -404,7 +436,7 @@ fun ConnectionSettings(config: ConnectionConfig, busy: Boolean, onSave: (Connect
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Done),
             modifier = Modifier.fillMaxWidth().testTag("connection_ai_url"),
         )
-        Text("A IA externa exige conta e ativação nas preferências. O envio de histórico e memórias depende de permissões separadas. Serviços externos podem ter custos; nenhuma assinatura é contratada pelo aplicativo.", style = MaterialTheme.typography.bodySmall, color = AuronColors.Muted)
+        Text("Com conta, a IA usa sua sessão Supabase. No modo local, ela exige o token pessoal do seu servidor configurado abaixo. Ative a IA nas preferências; histórico e memórias dependem de permissões separadas. Serviços externos podem ter custos; nenhuma assinatura é contratada pelo aplicativo.", style = MaterialTheme.typography.bodySmall, color = AuronColors.Muted)
         validation?.let { AuthMessage(it, isError = true, modifier = Modifier.testTag("connection_validation")) }
         Button(
             onClick = {
@@ -433,5 +465,59 @@ fun ConnectionSettings(config: ConnectionConfig, busy: Boolean, onSave: (Connect
             style = MaterialTheme.typography.bodySmall,
             color = AuronColors.Muted,
         )
+        HorizontalDivider(color = AuronColors.Elevated)
+        Text("IA NO MODO LOCAL · ACESSO PESSOAL", style = MaterialTheme.typography.labelMedium, color = AuronColors.Gold)
+        Text("Para conversar com IA sem criar uma conta AURON, configure um servidor AURON com acesso pessoal. O token auron_local_… é gerado nesse servidor e salvo cifrado no Android, separado dos dados exportados. Não informe uma chave de provedor, service_role ou senha do banco.", style = MaterialTheme.typography.bodySmall, color = AuronColors.Muted)
+        Text(
+            if (localAiConfigured) "Acesso pessoal salvo neste dispositivo. A conexão só é confirmada ao enviar uma mensagem."
+            else "Nenhum acesso pessoal salvo. Os comandos e registros locais continuam funcionando sem IA externa.",
+            style = MaterialTheme.typography.bodySmall,
+            color = AuronColors.Muted,
+            modifier = Modifier.testTag("connection_local_ai_status"),
+        )
+        if (!savedAiEndpoint) {
+            Text("Salve primeiro a URL base do servidor de IA em Salvar conexões. O token só pode ser associado à URL já salva.", style = MaterialTheme.typography.bodySmall, color = AuronColors.Gold, modifier = Modifier.testTag("connection_local_ai_save_url_first"))
+        }
+        OutlinedTextField(
+            value = localToken,
+            onValueChange = { if (it.length <= 256) { localToken = it; localValidation = null } },
+            label = { Text("Token pessoal do servidor") },
+            supportingText = { Text("auron_local_… · nunca uma chave do provedor de IA") },
+            visualTransformation = PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(onDone = { focus.clearFocus() }),
+            singleLine = true,
+            enabled = !busy,
+            modifier = Modifier.fillMaxWidth().testTag("connection_local_ai_token"),
+        )
+        localValidation?.let { AuthMessage(it, isError = true, modifier = Modifier.testTag("connection_local_ai_validation")) }
+        localAiError?.let { AuthMessage(it, isError = true, modifier = Modifier.testTag("connection_local_ai_error")) }
+        Button(
+            onClick = {
+                if (!savedAiEndpoint || busy) return@Button
+                val credential = localToken.trim()
+                val valid = try {
+                    AiAccess.requireLocalToken(credential)
+                    true
+                } catch (_: IllegalArgumentException) {
+                    localValidation = "Use o token pessoal auron_local_… gerado no servidor AURON; não use uma chave do Supabase ou do provedor de IA."
+                    false
+                }
+                if (valid) {
+                    localValidation = null
+                    focus.clearFocus()
+                    localToken = ""
+                    onSaveLocalAiAccess(config.aiBaseUrl, credential)
+                }
+            },
+            enabled = !busy && savedAiEndpoint && localToken.isNotBlank(),
+            modifier = Modifier.fillMaxWidth().testTag("connection_local_ai_save"),
+        ) { Text("Salvar acesso pessoal à IA") }
+        OutlinedButton(
+            onClick = { localToken = ""; localValidation = null; focus.clearFocus(); onClearLocalAiAccess() },
+            enabled = !busy && localAiConfigured,
+            modifier = Modifier.fillMaxWidth().testTag("connection_local_ai_clear"),
+        ) { Text("Remover acesso pessoal deste dispositivo") }
+        Text("Remover este acesso não apaga tarefas, memórias ou histórico. Para invalidar o token em outros aparelhos, altere-o também no servidor.", style = MaterialTheme.typography.bodySmall, color = AuronColors.Muted)
     }
 }

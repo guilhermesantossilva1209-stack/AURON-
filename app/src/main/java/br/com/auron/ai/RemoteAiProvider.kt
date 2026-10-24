@@ -24,9 +24,10 @@ import kotlin.coroutines.resume
 /** HTTPS only; cancellation disconnects the request. Model output is always text. */
 class RemoteAiProvider(
     val baseUrl: String,
+    val accessMode: AiAccessMode = AiAccessMode.SupabaseSession,
     val tokenProvider: suspend () -> String?,
 ) : AiProvider {
-    override val id = "authenticated-remote-v1"
+    override val id = if (accessMode == AiAccessMode.LocalGateway) "personal-gateway-v1" else "authenticated-remote-v1"
     override val isDemo = false
 
     override suspend fun reply(input: String, settings: AppSettings): ProviderResult = reply(AiRequest(input, settings))
@@ -44,10 +45,8 @@ class RemoteAiProvider(
         }.getOrElse { return unavailable("Configure uma URL HTTPS válida para o servidor de IA, sem caminho ou credenciais.") }
         val token = try { tokenProvider() } catch (cancelled: CancellationException) {
             throw cancelled
-        } catch (_: Exception) { return unavailable("Não foi possível verificar sua sessão. Entre novamente.") }
-        if (token.isNullOrBlank() || token.length > 8_192 || token.any { it.isWhitespace() || it.isISOControl() }) {
-            return unavailable("Entre em sua conta para usar a IA conectada.")
-        }
+        } catch (_: Exception) { return unavailable(accessError()) }
+        val authorization = AiAccess.authorization(accessMode, token) ?: return unavailable(accessError())
         val context = AiContextBuilder.build(request)
         val body = JSONObject().apply {
             put("input", request.input)
@@ -84,7 +83,7 @@ class RemoteAiProvider(
                             instanceFollowRedirects = false
                             useCaches = false
                             doOutput = true
-                            setRequestProperty("Authorization", "Bearer $token")
+                            setRequestProperty("Authorization", authorization)
                             setRequestProperty("Content-Type", "application/json; charset=utf-8")
                             setRequestProperty("Accept", "application/json")
                             setFixedLengthStreamingMode(body.size)
@@ -106,7 +105,7 @@ class RemoteAiProvider(
                                 if (answer.isBlank() || answer.length > 16_000) unavailable("O servidor enviou uma resposta inválida.")
                                 else ProviderResult.Success(answer)
                             }
-                            401, 403 -> unavailable("Sua sessão não foi aceita. Entre novamente.")
+                            401, 403 -> unavailable(accessError())
                             413 -> unavailable("O servidor recusou o tamanho da mensagem ou do contexto.")
                             429 -> unavailable("Limite temporário de solicitações. Aguarde e tente novamente.")
                             502, 503, 504 -> unavailable("O modelo está indisponível ou demorou para responder. Tente novamente.")
@@ -128,6 +127,12 @@ class RemoteAiProvider(
     }
 
     private fun unavailable(reason: String) = ProviderResult.Unavailable(reason)
+
+    private fun accessError() = if (accessMode == AiAccessMode.LocalGateway) {
+        "Configure ou atualize o token pessoal do servidor de IA nas conexões. O modo local não exige conta."
+    } else {
+        "Sua sessão não está disponível ou foi recusada pelo servidor de IA. Entre novamente e verifique a conta autorizada."
+    }
 
     private companion object {
         val executor = ThreadPoolExecutor(

@@ -8,6 +8,11 @@ import br.com.auron.data.RoomAuronRepository
 import br.com.auron.domain.*
 import br.com.auron.auth.AuthManager
 import br.com.auron.ai.RemoteAiProvider
+import br.com.auron.ai.AiAccessMode
+import br.com.auron.ai.LocalAiAccessStore
+import br.com.auron.automation.AutomationController
+import br.com.auron.automation.AutomationCommand
+import br.com.auron.automation.AutomationCommandParser
 import br.com.auron.bible.*
 import br.com.auron.cloud.CloudFailure
 import br.com.auron.cloud.CloudUiState
@@ -57,6 +62,7 @@ sealed interface UiEvent {
     data class Navigate(val destination: String) : UiEvent
     data class Speak(val text: String) : UiEvent
     data class OpenReading(val itemId: String) : UiEvent
+    data class Automation(val command: AutomationCommand, val profileId: String) : UiEvent
     data object OpenAuth : UiEvent
     data object OpenConnections : UiEvent
 }
@@ -64,6 +70,13 @@ sealed interface UiEvent {
 /** Single owner of user actions. Only explicit user submissions reach CommandParser. */
 class AuronViewModel(application: Application) : AndroidViewModel(application) {
     val auth = AuthManager(application)
+    val automation = AutomationController.get(application)
+    private val localAiAccess = LocalAiAccessStore(application)
+    private val localAiMutex = Mutex()
+    private val _localAiConfigured = MutableStateFlow(false)
+    val localAiConfigured = _localAiConfigured.asStateFlow()
+    private val _localAiError = MutableStateFlow<String?>(null)
+    val localAiError = _localAiError.asStateFlow()
     private data class Profile(val id: String, val label: String, val repository: AuronRepository, val preferences: SettingsRepository)
     private var profile: Profile? = null
     private var profileScope: CoroutineScope? = null
@@ -104,6 +117,7 @@ class AuronViewModel(application: Application) : AndroidViewModel(application) {
                 profileScope?.cancel()
                 loadJob?.cancel()
                 profile = null
+                automation.setProfile(identity?.first)
                 while (eventChannel.tryReceive().isSuccess) { /* discard events from previous identity */ }
                 _state.value = AuronUiState()
                 if (identity != null) {
@@ -115,7 +129,10 @@ class AuronViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
         viewModelScope.launch {
-            auth.config.map { it.aiBaseUrl }.distinctUntilChanged().collect {
+            auth.config.map { it.aiBaseUrl }.distinctUntilChanged().collect { url ->
+                localAiMutex.withLock {
+                    _localAiConfigured.value = withContext(Dispatchers.IO) { runCatching { localAiAccess.read(url) != null }.getOrDefault(false) }
+                }
                 _state.update { current -> current.copy(aiStatus = if (current.settings.useRemoteAi) "Aguardando solicitação" else "Demonstração local") }
             }
         }
@@ -146,7 +163,6 @@ class AuronViewModel(application: Application) : AndroidViewModel(application) {
                         memories = data.memories, memoryError = data.memoryError, readings = data.readings,
                         aiStatus = when {
                             !data.settings.useRemoteAi -> "Demonstração local"
-                            active.id == "local" -> "IA indisponível · faça login"
                             previous.aiStatus == "Demonstração local" -> "Aguardando solicitação"
                             else -> previous.aiStatus
                         }
@@ -258,6 +274,37 @@ class AuronViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun requestLogin() { auth.showLogin() }
+    fun saveLocalAiAccess(baseUrl: String, token: String) {
+        viewModelScope.launch {
+            localAiMutex.withLock {
+                _localAiError.value = null
+                try {
+                    check(baseUrl == auth.config.value.aiBaseUrl && baseUrl.isNotBlank())
+                    withContext(Dispatchers.IO) { localAiAccess.save(baseUrl, token.trim()) }
+                    _localAiConfigured.value = true
+                } catch (error: Exception) {
+                    if (error is CancellationException) throw error
+                    _localAiError.value = "Não foi possível salvar. Salve a URL HTTPS do servidor e confira o token pessoal auron_local_."
+                }
+            }
+        }
+    }
+
+    fun clearLocalAiAccess() {
+        viewModelScope.launch {
+            localAiMutex.withLock {
+                _localAiError.value = null
+                try {
+                    withContext(Dispatchers.IO) { localAiAccess.clear() }
+                    _localAiConfigured.value = false
+                } catch (error: Exception) {
+                    if (error is CancellationException) throw error
+                    _localAiError.value = "Não foi possível remover o acesso local à IA. Tente novamente."
+                }
+            }
+        }
+    }
+
     fun logout() { viewModelScope.launch { auth.signOut() } }
 
     /** Cloud operations are opt-in and never block local routine/task writes. */
@@ -358,22 +405,31 @@ class AuronViewModel(application: Application) : AndroidViewModel(application) {
         val input = text.trim()
         require(input.length in 1..4000) { "Envie uma mensagem de 1 a 4.000 caracteres." }
         require(source == "text" || source == "voice") { "Origem de comando não autorizada." }
+        val command = CommandParser.parse(input)
+        if (command == LocalCommand.Unknown) {
+            AutomationCommandParser.parse(input)?.let { automationCommand ->
+                requireCurrent(this)
+                // Commands and reply text stay transient: notifications must never enter chat/AI history.
+                eventChannel.send(UiEvent.Automation(automationCommand, id))
+                return@action
+            }
+        }
         val now = System.currentTimeMillis()
         val lastUserMessageId = UUID.randomUUID().toString()
         repository.addMessage(ChatMessage(lastUserMessageId, "user", input, now, source))
-        val command = CommandParser.parse(input)
         val settings = preferences.settings.first()
         val remote = command == LocalCommand.Unknown && settings.useRemoteAi
         var responseSource = if (command == LocalCommand.Unknown || command == LocalCommand.Help) "demo" else "system"
         val reply = if (remote) {
             _state.update { it.copy(aiStatus = "Consultando IA…") }
             val config = auth.config.value
-            val response = if (id == "local") ProviderResult.Unavailable("Entre em sua conta para usar o servidor de IA.")
-            else if (config.aiBaseUrl.isBlank()) ProviderResult.Unavailable("Configure o endereço HTTPS do servidor de IA.")
+            val response = if (config.aiBaseUrl.isBlank()) ProviderResult.Unavailable("Configure o endereço HTTPS do servidor de IA.")
             else if (settings.memoryEnabled && settings.shareMemoryWithAi && _state.value.memoryError != null) ProviderResult.Unavailable("A memória não pôde ser aberta. Desative seu compartilhamento para conversar sem ela.")
-            else RemoteAiProvider(config.aiBaseUrl) {
+            else RemoteAiProvider(config.aiBaseUrl, if (id == "local") AiAccessMode.LocalGateway else AiAccessMode.SupabaseSession) {
                 requireCurrent(this)
-                val token = auth.accessToken()
+                val token = if (id == "local") localAiMutex.withLock {
+                    withContext(Dispatchers.IO) { localAiAccess.read(config.aiBaseUrl) }
+                } else auth.accessToken()
                 requireCurrent(this)
                 token
             }.reply(AiRequest(
@@ -522,6 +578,7 @@ class AuronViewModel(application: Application) : AndroidViewModel(application) {
 
     override fun onCleared() {
         profileScope?.cancel()
+        automation.setProfile(null)
         auth.close()
         super.onCleared()
     }

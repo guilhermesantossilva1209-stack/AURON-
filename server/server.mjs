@@ -1,5 +1,6 @@
 import { createServer } from 'node:http';
 import { pathToFileURL } from 'node:url';
+import { createHash, timingSafeEqual } from 'node:crypto';
 
 const BODY_LIMIT = 32_768;
 const RESPONSE_LIMIT = 65_536;
@@ -10,6 +11,7 @@ const fail = (status, code) => { throw new HttpError(status, code); };
 const plain = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
 const text = (value, length) => typeof value === 'string' && value.trim().length > 0 && value.length <= length;
 const uuid = (value) => typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+const LOCAL_TOKEN = /^auron_local_[A-Za-z0-9_-]{43,128}$/;
 
 function endpoint(value, allowHttp) {
   const url = new URL(value);
@@ -24,13 +26,19 @@ function endpoint(value, allowHttp) {
 function configValues(config) {
   if (!plain(config)) throw new Error('Missing server configuration.');
   if (!['ollama', 'openai'].includes(config.provider)) throw new Error('Unsupported AI provider.');
-  // Personal deployment fails closed until an administrator selects the real
-  // Supabase user UUID. A caller-provided email/id is never an authorization rule.
-  if (!uuid(config.ownerUserId)) throw new Error('Set OWNER_USER_ID to the owner Supabase user UUID.');
-  if (!text(config.supabaseKey, 8_192) || config.supabaseKey.startsWith('sb_secret_')) {
+  // Either mode is explicitly provisioned by the owner. No implicit anonymous
+  // fallback, and partial Supabase settings still fail closed.
+  const sessionEnabled = [config.supabaseUrl, config.supabaseKey, config.ownerUserId].some((value) => value !== undefined && value !== '');
+  const localTokenHash = config.localTokenHash ?? '';
+  if (typeof localTokenHash !== 'string' || (localTokenHash && !/^[0-9a-f]{64}$/i.test(localTokenHash))) {
+    throw new Error('LOCAL_ACCESS_TOKEN_SHA256 must be a SHA-256 hex digest.');
+  }
+  if (!sessionEnabled && !localTokenHash) throw new Error('Configure owner Supabase access or a personal local access token hash.');
+  if (sessionEnabled && !uuid(config.ownerUserId)) throw new Error('Set OWNER_USER_ID to the owner Supabase user UUID.');
+  if (sessionEnabled && (!text(config.supabaseKey, 8_192) || config.supabaseKey.startsWith('sb_secret_'))) {
     throw new Error('A Supabase publishable or anon key is required.');
   }
-  if (config.supabaseKey.split('.').length === 3) {
+  if (sessionEnabled && config.supabaseKey.split('.').length === 3) {
     let role;
     try { role = JSON.parse(Buffer.from(config.supabaseKey.split('.')[1], 'base64url').toString()).role; }
     catch { throw new Error('Invalid Supabase key.'); }
@@ -48,8 +56,10 @@ function configValues(config) {
   }
   return {
     ...config,
-    ownerUserId: config.ownerUserId.toLowerCase(),
-    supabaseUrl: endpoint(config.supabaseUrl, config.allowInsecureLoopback === true),
+    sessionEnabled,
+    localTokenHash: localTokenHash ? Buffer.from(localTokenHash, 'hex') : null,
+    ownerUserId: sessionEnabled ? config.ownerUserId.toLowerCase() : null,
+    supabaseUrl: sessionEnabled ? endpoint(config.supabaseUrl, config.allowInsecureLoopback === true) : null,
     providerUrl: endpoint(config.providerUrl, config.provider === 'ollama' || config.allowInsecureLoopback === true),
     providerKey,
     requestTimeoutMs: integer(config.requestTimeoutMs, 45_000, 120_000),
@@ -182,7 +192,7 @@ function respond(response, status, payload) {
   response.end(JSON.stringify(payload));
 }
 
-/** No conversation state is kept. Supabase validates every bearer before inference. */
+/** No conversation state is kept. Each explicitly selected credential is validated before inference. */
 export function createAuronServer(suppliedConfig, { fetch: fetchImpl = globalThis.fetch } = {}) {
   const config = configValues(suppliedConfig);
   const userRate = rateLimiter(config.rateLimit, config.rateWindowMs);
@@ -205,19 +215,31 @@ export function createAuronServer(suppliedConfig, { fetch: fetchImpl = globalThi
     request.once('aborted', disconnected); response.once('close', disconnected);
     try {
       const authorization = request.headers.authorization;
-      if (typeof authorization !== 'string' || !/^Bearer [A-Za-z0-9._~+\/-]{1,8192}$/.test(authorization)) {
+      const localToken = typeof authorization === 'string' && authorization.startsWith('AuronLocal ')
+        ? authorization.slice('AuronLocal '.length) : null;
+      if (localToken !== null) {
+        if (!config.localTokenHash || !LOCAL_TOKEN.test(localToken) ||
+            !timingSafeEqual(createHash('sha256').update(localToken).digest(), config.localTokenHash)) {
+          fail(401, 'invalid_local_access');
+        }
+      } else if (!config.sessionEnabled || typeof authorization !== 'string' ||
+          !/^Bearer [A-Za-z0-9._~+\/-]{1,8192}$/.test(authorization) || authorization.startsWith('Bearer auron_local_')) {
         fail(401, 'session_required');
       }
       if (!/^application\/json(?:\s*;|$)/i.test(request.headers['content-type'] ?? '')) fail(415, 'json_required');
       const declaredSize = Number(request.headers['content-length']);
       if (Number.isFinite(declaredSize) && declaredSize > BODY_LIMIT) fail(413, 'body_too_large');
       const body = validateBody(await readRequest(request, controller.signal));
-      const user = await fetchJson(`${config.supabaseUrl}/auth/v1/user`, {
-        headers: { authorization, apikey: config.supabaseKey, accept: 'application/json' },
-      }, controller.signal, 503, fetchImpl);
-      if (!plain(user) || !text(user.id, 128)) fail(401, 'invalid_session');
-      if (!uuid(user.id) || user.id.toLowerCase() !== config.ownerUserId) fail(403, 'owner_only');
-      if (!userRate(user.id)) fail(429, 'request_limit');
+      if (localToken === null) {
+        const user = await fetchJson(`${config.supabaseUrl}/auth/v1/user`, {
+          headers: { authorization, apikey: config.supabaseKey, accept: 'application/json' },
+        }, controller.signal, 503, fetchImpl);
+        if (!plain(user) || !text(user.id, 128)) fail(401, 'invalid_session');
+        if (!uuid(user.id) || user.id.toLowerCase() !== config.ownerUserId) fail(403, 'owner_only');
+      }
+      // Both methods belong to the same private owner; switching mode does not
+      // double the inference budget. The local token is never sent upstream.
+      if (!userRate('owner')) fail(429, 'request_limit');
       const messages = messagesFor(body);
       const providerHeaders = { 'content-type': 'application/json', accept: 'application/json' };
       if (config.provider === 'openai' && config.providerKey) providerHeaders.authorization = `Bearer ${config.providerKey}`;
@@ -253,6 +275,7 @@ export function configFromEnvironment(env = process.env) {
     supabaseUrl: env.SUPABASE_URL,
     supabaseKey: env.SUPABASE_PUBLISHABLE_KEY,
     ownerUserId: env.OWNER_USER_ID,
+    localTokenHash: env.LOCAL_ACCESS_TOKEN_SHA256,
     provider: env.AI_PROVIDER ?? 'ollama',
     providerUrl: env.AI_PROVIDER_URL ?? 'http://127.0.0.1:11434',
     providerModel: env.AI_MODEL,
