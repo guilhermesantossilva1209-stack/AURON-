@@ -54,7 +54,12 @@ class AuronSmokeTest {
 
         navigate("modules")
         awaitText("Um sistema. Novas possibilidades.")
+        compose.onNodeWithTag("screen_modules").performScrollToNode(hasText("MAPA DE EVOLUÇÃO · AINDA NÃO IMPLEMENTADO"))
         compose.onNodeWithText("MAPA DE EVOLUÇÃO · AINDA NÃO IMPLEMENTADO").assertIsDisplayed()
+
+        navigate("automation")
+        compose.onNodeWithTag("screen_automation").assertIsDisplayed()
+        compose.onNodeWithTag("automation_access").performScrollTo().assertIsDisplayed()
 
         navigate("settings")
         awaitText("Do seu jeito")

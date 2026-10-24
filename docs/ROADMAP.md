@@ -25,6 +25,14 @@ de chatbot inclui API. Validar ferramentas internas separadamente de texto gerad
 
 ## Fase 3 — automações
 
+A revisão 0.2.1 implementa abertura de aplicativos, permissão de notificações,
+lista autorizada por perfil, leitura em primeiro plano, avisos configuráveis e
+rascunho/resposta WhatsApp com confirmação via RemoteInput. Depende das ações
+expostas pelo Android e pelo aplicativo. Consulte [AUTOMATION.md](AUTOMATION.md).
+Lembretes agendados e as demais possibilidades abaixo continuam planejados.
+
+### Planejamento restante
+
 Intents oficiais, notificações Android 13+, lembretes com WorkManager (sem prometer
 horário exato), temporizadores e confirmação para efeitos externos sensíveis.
 MacroDroid opcional via mecanismos documentados. Nenhum uso de acessibilidade para

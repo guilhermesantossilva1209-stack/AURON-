@@ -1,6 +1,18 @@
 # Compilação e atualização 0.2.1
 
-## Resultado atualizado — 23/10/2026
+## Revisão de 24/10/2026
+
+Fonte atual: versionCode4, versionName0.2.1, applicationId br.com.auron.
+A compilação desta etapa passou no [CI 40062208644](https://github.com/guilhermesantossilva1209-stack/AURON-/actions/runs/40062208644),
+com 99 testes JVM e lint sem erros. O estado final dos testes instrumentados e
+artefatos está em [VALIDATION.md](VALIDATION.md). Os resultados abaixo de 23/10
+são históricos e não substituem a validação da revisão atual.
+
+O emulador Android16 agora roda também a cada push na branch principal.
+Na execução manual, marque `instrumentation`. A assinatura original continua
+obrigatória para atualizar o APK pessoal; o APK debug do CI usa chave de validação.
+
+## Resultado anterior — 23/10/2026
 
 O [workflow 39996099432](https://github.com/guilhermesantossilva1209-stack/AURON-/actions/runs/39996099432)
 passou no commit `9f2f34e728b54de543769eb38591edc1a1fcee34`. Compilação Kotlin/KSP,
@@ -14,7 +26,7 @@ outro compilador; é necessário recuperar/reutilizar a chave desse ambiente.
 Não há confirmação de compatibilidade de assinatura nem autorização para substituí-la.
 Veja [validação](VALIDATION.md) e [atualização segura](UPGRADE-0.2.md).
 
-Esta revisão mantém o aplicativo `br.com.auron`, usa `versionCode = 3` e
+Esta revisão mantém o aplicativo `br.com.auron`, usa `versionCode = 4` e
 `versionName = "0.2.1"`. É uma atualização da família AURON 0.2. Não há mudança
 de identificador, chave de assinatura, versão do banco Room ou estratégia de
 migração nesta preparação de compilação.
@@ -133,6 +145,6 @@ dados privados em uma atualização compatível. Não desinstale a versão anter
 nem limpe seus dados. Se aparecer incompatibilidade de assinatura, pare e
 recupere a chave original; não há como obter a chave privada a partir de um APK.
 
-Se a versão instalada tiver um `versionCode` maior que 3, será necessário elevar
+Se a versão instalada tiver um `versionCode` maior que 4, será necessário elevar
 o número novamente antes de compilar. O código salvo antes desta revisão tinha
 `versionCode = 2`; o APK físico instalado ainda não foi inspecionado.

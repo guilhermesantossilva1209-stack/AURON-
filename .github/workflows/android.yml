@@ -153,7 +153,7 @@ jobs:
           target: google_apis
           arch: x86_64
           profile: pixel_c
-          disable-animations: true
+          disable-animations: false
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           script: gradle --no-daemon connectedDebugAndroidTest
       - uses: actions/upload-artifact@v4

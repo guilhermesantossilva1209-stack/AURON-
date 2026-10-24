@@ -1,10 +1,18 @@
 # Cadastro privado e autenticação — AURON 0.2.1
 
-O aplicativo usa os endpoints reais do Supabase Auth por HTTPS para cadastro,
-login, recuperação, renovação e logout. **A conexão com o projeto AURON-0.2 ainda
-não foi configurada nem testada nesta execução.** O proprietário informou que
-preencherá a URL/chave pública no tablet e ainda não criou sua conta. Sem esses
-dados, o app informa indisponibilidade; não aceita autenticação fictícia.
+O aplicativo usa endpoints reais do Supabase Auth por HTTPS para cadastro,
+login, recuperação, renovação e logout. Em 24/10/2026, a migração existente foi
+aplicada ao projeto **AURON 0.2** e o e-mail informado pelo proprietário foi
+registrado na lista privada. Nenhuma conta/senha foi criada automaticamente;
+a consulta encontrou zero usuários Auth. O e-mail não foi colocado no repositório.
+
+A função SQL de cadastro foi verificada: proprietário permitido, outro e-mail
+recusado e evento sem e-mail recusado. RLS está ativada e forçada; anon não pode
+consultar a cópia, authenticated não pode inserir diretamente nem ler a lista
+privada. Isso **não comprova** login/cadastro HTTP ou envio de e-mails: o Auth Hook
+ainda precisa ser ativado no painel. O conector disponível não oferece essa
+configuração administrativa. URL/chave pública serão preenchidas no tablet,
+conforme escolhido pelo proprietário. Nunca inserir chave administrativa no APK.
 
 O cadastro inicial exige uma política no servidor: um Auth Hook permite somente
 o e-mail escolhido pelo proprietário. A confirmação na tela é uma declaração de
@@ -20,7 +28,8 @@ separadamente. Não habilite cadastro antes de ativar e testar essa política.
    serviço algum. A alternativa de código aberto é hospedar Supabase Auth, o que
    exige servidor, manutenção e HTTPS; não é inferência/auth inteiramente no tablet.
 2. Mantenha **Allow new users to sign up** desativado durante a preparação.
-   No **SQL Editor**, aplique
+   **No projeto AURON 0.2 desta entrega, a migração e a lista privada já foram aplicadas.**
+   Não é necessário repetir. Em outro projeto, no **SQL Editor**, aplique
    [202610220001_owner_cloud.sql](../supabase/migrations/202610220001_owner_cloud.sql).
    Depois abra [configure-owner.example.sql](../supabase/configure-owner.example.sql),
    substitua o e-mail de exemplo **pelo seu próprio e-mail** e execute essa cópia
@@ -140,3 +149,14 @@ Referências oficiais para configuração (os links não substituem testes no pr
 
 As cotas e condições externas podem mudar. Não é necessário contratar IA para
 testar cadastro e login.
+
+## Limite da auditoria remota
+
+Os advisors ainda sinalizam as RPCs SECURITY DEFINER autenticadas. Elas são
+intencionais, validam auth.uid(), proprietário confirmado e revisão antes de
+acessar a cópia. Os testes de segurança SQL passaram no banco descartável do CI.
+O projeto já tinha `public.rls_auto_enable()` retornando event_trigger, associado
+à ativação automática de RLS; os advisors também sinalizam seu privilégio EXECUTE.
+A função preexistente foi apenas inspecionada e não alterada. Referências:
+[anônimo](https://supabase.com/docs/guides/database/database-linter?lint=0028_anon_security_definer_function_executable)
+e [autenticado](https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable).

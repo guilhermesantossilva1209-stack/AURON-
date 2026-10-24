@@ -1,15 +1,16 @@
 # AURON — Sistema de Inteligência Pessoal · 0.2.1
 
 Continuação do aplicativo Android existente, com o mesmo pacote **br.com.auron**,
-Android 8.0+ (API26), versionCode3 e versionName0.2.1. A versão anterior instalada
-foi testada pelo usuário. **Esta atualização compilou no GitHub Actions em
-23/10/2026: 72 testes JVM aprovados e lint sem erros.** O APK debug de validação
-foi gerado; sua assinatura ainda não foi comparada com a instalação atual.
-Veja [resultados e pendências](docs/VALIDATION.md).
+Android 8.0+ (API26), **versionCode4** e **versionName0.2.1**. Esta revisão corrige
+os campos de autenticação, integra IA opcional nos dois modos, atualiza a imagem
+oficial de abertura e acrescenta as automações autorizadas da Fase 3.
+Resultados e limites estão em [VALIDATION.md](docs/VALIDATION.md).
+A assinatura original deve ser reutilizada para atualizar o tablet sem desinstalar.
 
 ## Implementação nesta versão
 
-- Cadastro por e-mail/senha com confirmação, validação, mensagens de erro e
+- Campos de acesso editáveis mesmo antes da configuração externa, foco e navegação
+  pelo teclado. Cadastro por e-mail/senha com confirmação, validação, mensagens de erro e
   consentimento; login, recuperação, renovação e logout via Supabase Auth real.
   Sessão cifrada no Android Keystore. Exige [configuração externa](docs/AUTH-SETUP.md).
 - Perfil local preservado, contas separadas e cópia explícita dos dados locais
@@ -19,12 +20,15 @@ Veja [resultados e pendências](docs/VALIDATION.md).
   proteção contra revisão desatualizada. Sem restauração ou sincronização automática.
 - Central de comando e rotinas matinal/noturna preservadas; robô Canvas original
   de corpo inteiro. A abertura usa a imagem oficial: close no peito, zoom até
-  revelar o cenário completo, Pular e fade. Movimento de câmera sobre imagem 2D.
+  revelar o robô inteiro no novo fundo preto sem painéis, Pular e fade. Movimento de câmera sobre imagem 2D.
 - Tarefas, histórico e voz por toque mantidos. Seleção de voz offline pt-BR,
   teste, velocidade e tonalidade salvos por perfil; gênero depende das vozes instaladas.
 - Memórias manuais editáveis/excluíveis, cifradas e separadas do histórico.
 - Provedor de IA HTTPS e servidor Node implementados; contexto limitado e consentimentos
   separados. Sem servidor/modelo configurado, permanece o modo demonstrativo explícito.
+- [Automações autorizadas](docs/AUTOMATION.md): abertura de aplicativos por comando
+  explícito, leitura de notificações por lista permitida e respostas WhatsApp por
+  ação oficial, sempre com confirmação. Conteúdo transitório, sem histórico ou IA.
 - Cinco versículos offline por dia, data local estável, histórico por perfil e
   conclusão somente pelo botão de leitura. [Fonte/licença](docs/BIBLE-LICENSE.md):
   35 versículos BLIVRE em ciclo de sete dias, sem repetição nos seis anteriores.
@@ -46,15 +50,16 @@ app/src/main/java/br/com/auron/
   MainActivity.kt   ciclo de vida e exportação vinculada ao perfil
   auth/            Supabase REST, validação, sessão cifrada
   cloud/           cópia manual por RPC, limites e revisão esperada
-  ai/              cliente HTTPS e contexto autorizado
+  ai/              cliente HTTPS, contexto autorizado e credencial local cifrada
+  automation/      intents, acesso autorizado a notificações e resposta confirmada
   bible/           catálogo e seleção diária
   data/            Room, migração, perfis, cifra de memória, DataStore
   domain/          modelos, repositórios, comandos e AiProvider
   ui/              central, cadastro/login, memória, leitura, robô e tema
   voice/           voz por toque e TTS existentes
 app/src/main/assets/bible_daily.json
-app/src/test/      72 testes JVM aprovados no CI
-app/src/androidTest/ testes de dados, sessão e UI (não executados aqui)
+app/src/test/      testes JVM de domínio, políticas e segurança
+app/src/androidTest/ testes de dados, sessão, notificações e UI em emulador
 server/            gateway Node opcional, sem dependências npm
 supabase/          migração, configuração do proprietário e testes SQL descartáveis
 docs/recovery/     página HTTPS de recuperação a ser configurada/hospedada

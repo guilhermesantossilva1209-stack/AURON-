@@ -15,7 +15,10 @@ import br.com.auron.bible.BibleVerse
 @Composable
 fun BibleReadingSheet(day: String, verses: List<BibleVerse>, completed: Boolean, onComplete: () -> Unit, onDismiss: () -> Unit) {
     val uri = LocalUriHandler.current
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    // Keep the completion controls visible on tablets; a half-height sheet may
+    // place the footer outside the viewport even though its semantics exist.
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp).navigationBarsPadding()) {
             Text("Leitura bíblica • $day", style = MaterialTheme.typography.headlineSmall)
             Text("Cinco versículos do dia · disponível offline", style = MaterialTheme.typography.bodyMedium)

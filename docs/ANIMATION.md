@@ -2,15 +2,15 @@
 
 A abertura utiliza o JPEG oficial fornecido pelo proprietário, copiado sem
 alteração para `app/src/main/res/drawable-nodpi/auron_intro_reference.jpg`.
-Dimensão: 853 × 1280. SHA-256:
-`84ef47f3b312be9d5931970f92e63d057fecbab083d8679f7d13e803b365cde7`.
+Dimensão: 1067 × 1280. SHA-256:
+`0cd930a3c3ed9fa6e9648ffceefa7e049527f305d466301649ebfdf9d35f060a`.
 
 A câmera começa perto do símbolo A e da palavra AURON no peito, afasta-se
 suavemente e termina mostrando a imagem inteira com ContentScale.Fit, inclusive
 em tablet horizontal. As proporções e os pixels da referência foram preservados;
 faixas escuras laterais são esperadas quando a tela é mais larga que a imagem.
-Os painéis da ilustração são parte da identidade visual, não indicadores de
-módulos implementados.
+A nova referência de 24/10/2026 mostra o robô inteiro em fundo preto, sem painéis.
+Somente a imagem da abertura e o ponto focal da câmera foram atualizados.
 
 O movimento é uma transformação de câmera sobre a imagem 2D. Não há animação
 independente dos membros nem reconstrução 3D. Esta é a aproximação funcional
@@ -23,7 +23,7 @@ independente dos membros nem reconstrução 3D. Esta é a aproximação funciona
 - Botão Pular disponível imediatamente; falha de decodificação usa o robô vetorial
   existente e não bloqueia o aplicativo.
 - JPEG decodificado em Dispatchers.IO, sem escalonamento de densidade. Bitmap de
-  aproximadamente 4,2 MiB; transformação em graphicsLayer, sem recriar bitmap a
+  aproximadamente 5,2 MiB; transformação em graphicsLayer, sem recriar bitmap a
   cada quadro ou carregar vídeo/biblioteca adicional.
 - Abertura uma vez por inicialização da Activity, preservada na recriação de tela;
   navegação entre módulos não reinicia a sequência.

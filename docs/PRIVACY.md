@@ -1,7 +1,10 @@
 # Privacidade da versão 0.2.1
 
 - Permissões: microfone por toque e INTERNET para conexões opcionais HTTPS. Sem
-  contatos, localização, arquivos gerais, acessibilidade ou serviço de fundo.
+  contatos, localização, arquivos gerais ou acessibilidade. A Fase 3 declara somente
+  o NotificationListenerService oficial, protegido por permissão do Android e
+  habilitado pelo proprietário. O processamento de notificações é restrito ao
+  primeiro plano, ao perfil e aos aplicativos explicitamente autorizados.
 - Nenhum analytics, anúncio, chave de IA embutida ou envio automático de registros.
 - Modo local mantém os arquivos da 0.1 e continua acessível sem conta. Não é um
   cofre biométrico: proteja o tablet pelo bloqueio do Android.
@@ -21,8 +24,15 @@
   contra root, malware com controle do dispositivo ou tablet desbloqueado.
 - IA remota é desativada por padrão. Ao ativá-la, mensagens que não forem comandos
   locais são enviadas ao servidor configurado. Histórico e memórias exigem escolhas
-  separadas. O servidor valida o token no Supabase e repassa contexto ao modelo
+  separadas. O servidor valida a sessão Supabase ou, no modo local, o token pessoal
+  do gateway. Esse token é inserido pelo proprietário e cifrado no Keystore; nunca
+  é embutido no APK. A chave de provedor permanece no servidor, que repassa contexto ao modelo
   escolhido; política de retenção/custos depende desse operador/provedor.
+- Notificações autorizadas e rascunhos de resposta ficam apenas em memória,
+  não integram chat, exportações, cópia na nuvem ou contexto da IA. Revogação,
+  troca de perfil e saída do primeiro plano limpam esse estado. Respostas WhatsApp
+  exigem confirmação específica e ação RemoteInput oficial; não há envio automático.
+  Detalhes e limites: [AUTOMATION.md](AUTOMATION.md).
 - Respostas de IA são texto; nunca são executadas pelo parser de comandos.
 - A cópia manual Supabase exige consulta, consentimento e confirmação separados.
   Inclui memórias decifradas, conversas, tarefas e preferências do perfil atual.
