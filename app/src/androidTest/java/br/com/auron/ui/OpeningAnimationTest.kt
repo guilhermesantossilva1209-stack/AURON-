@@ -23,7 +23,7 @@ import android.animation.ValueAnimator
 class OpeningAnimationTest {
     @get:Rule val compose = createComposeRule()
 
-    @Test fun openingChangesItsRenderedGeometryOverTime() {
+    @Test fun openingApproachesTheChestThenRestoresTheCompleteImage() {
         assumeTrue("Zoom requires Android animations enabled", ValueAnimator.areAnimatorsEnabled())
         compose.mainClock.autoAdvance = false
         compose.setContent { AuronTheme { AuronIntro {} } }
@@ -31,11 +31,14 @@ class OpeningAnimationTest {
             compose.mainClock.advanceTimeByFrame()
             compose.onAllNodesWithTag("intro_reference").fetchSemanticsNodes().isNotEmpty()
         }
-        compose.mainClock.advanceTimeBy(500)
-        val revealing = compose.onNodeWithTag("auron_intro").captureToImage()
-        compose.mainClock.advanceTimeBy(1300)
-        val zoomedOut = compose.onNodeWithTag("auron_intro").captureToImage()
-        assertTrue("The opening must render camera movement", changedSamples(revealing, zoomedOut) > 20)
+        val complete = compose.onNodeWithTag("auron_intro").captureToImage()
+        compose.mainClock.advanceTimeBy(1000)
+        val close = compose.onNodeWithTag("auron_intro").captureToImage()
+        compose.mainClock.advanceTimeBy(4300)
+        val restored = compose.onNodeWithTag("auron_intro").captureToImage()
+        assertTrue("The camera must approach the chest", changedSamples(complete, close) > 20)
+        assertTrue("The camera must move away again", changedSamples(close, restored) > 20)
+        assertEquals("The final frame must restore the uncut image", 0, changedSamples(complete, restored))
     }
 
     @Test fun skipIsAvailableWithoutWaitingForTheAnimation() {

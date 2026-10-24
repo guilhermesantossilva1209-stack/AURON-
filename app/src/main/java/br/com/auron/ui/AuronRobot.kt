@@ -270,18 +270,21 @@ internal fun AuronIntro(deadlineElapsedMs: Long? = null, onSkip: () -> Unit) {
             }.getOrNull()
         }
     }
-    val camera = remember { Animatable(0f) }
+    val camera = remember { Animatable(1f) }
     val animationsEnabled = rememberSystemAnimationsEnabled()
     LaunchedEffect(animationsEnabled, reference) {
         if (!animationsEnabled) camera.snapTo(1f)
         else if (reference != null) {
-            // Leave time to show the complete artwork even if decoding is slow.
+            // Approach the chest, then reveal the complete artwork within the
+            // existing deadline. Slow decoding must never delay access to the app.
             val remaining = deadlineElapsedMs?.let { it - android.os.SystemClock.elapsedRealtime() }
                 ?: AURON_INTRO_DURATION_MS
-            val hold = if (remaining > 1000L) 200 else 0
-            val duration = (remaining - hold - 500L).coerceIn(0L, 4500L).toInt()
-            if (duration == 0) camera.snapTo(1f)
-            else camera.animateTo(1f, tween(duration, delayMillis = hold, easing = FastOutSlowInEasing))
+            val motionBudget = (remaining - 500L).coerceIn(0L, 4700L).toInt()
+            if (motionBudget < 1600) camera.snapTo(1f)
+            else {
+                camera.animateTo(0f, tween(800, delayMillis = 200, easing = FastOutSlowInEasing))
+                camera.animateTo(1f, tween(motionBudget - 1000, easing = FastOutSlowInEasing))
+            }
         }
     }
     Surface(color = AuronColors.Background, modifier = Modifier.fillMaxSize().testTag("auron_intro")) {
