@@ -179,7 +179,7 @@ class AutomationControllerTest {
             .setContentTitle(title).setContentText(text)
             .setGroup("auron-test-group").setGroupSummary(summary).build()
         return StatusBarNotification(context.packageName, context.packageName, 7733, "auron-test-notification",
-            Process.myUid(), Process.myPid(), value, Process.myUserHandle(), null, 1_000L)
+            Process.myUid(), Process.myPid(), 0, value, Process.myUserHandle(), 1_000L)
     }
 
     private fun preferenceName(profile: String) = "auron_automation_${ProfileStorage.digest(profile)}"
