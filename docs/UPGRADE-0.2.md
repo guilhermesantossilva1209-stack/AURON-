@@ -1,3 +1,5 @@
+> **Procedimento vigente desta entrega (27/10/2026):** [ZIP no notebook e Android Studio](STABILIZATION-20261027.md#entrega-e-atualização-pelo-notebook). Não é necessário Git Pull. O restante deste documento preserva alternativas de compilação pelo tablet discutidas anteriormente.
+
 # Gerar e instalar a atualização 0.2.1 pelo tablet
 
 O aplicativo continua Kotlin/Compose nativo, pacote **br.com.auron**, Android8+

@@ -1,3 +1,5 @@
+> **Revisão de login e IA de 27/10/2026:** consulte [entrega atual](STABILIZATION-20261027.md) e [validação atual](VALIDATION.md). Os resultados abaixo registram builds anteriores e alternativas de CI; a instalação desta entrega será feita pelo notebook a partir do ZIP.
+
 # Compilação e atualização 0.2.1
 
 ## Revisão de 24/10/2026

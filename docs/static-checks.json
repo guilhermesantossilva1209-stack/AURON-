@@ -70,7 +70,7 @@
   "passed": 9,
   "total": 9,
   "test_sources_not_executed": {
-    "test": 99,
-    "androidTest": 59
+    "test": 104,
+    "androidTest": 73
   }
 }

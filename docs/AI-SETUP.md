@@ -5,7 +5,9 @@ ou uma API compatível com Chat Completions. Há dois acessos independentes: ses
 Supabase do proprietário ou token pessoal do gateway para o modo local sem conta.
 Um modelo, domínio e gateway de IA ainda precisam ser configurados pelo proprietário.
 Sem isso, comandos e rotinas locais continuam disponíveis; respostas demonstrativas
-continuam identificadas. O código de integração não significa que existe um modelo conectado.
+continuam identificadas. Se a solicitação remota falhar, o chat apresenta o motivo e
+a resposta demonstrativa local, sem marcar sucesso de IA nem alterar o consentimento.
+O código de integração não significa que existe um modelo conectado.
 
 ## Arquitetura e privacidade
 

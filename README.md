@@ -1,12 +1,18 @@
 # AURON — Sistema de Inteligência Pessoal · 0.2.1
 
-Continuação do aplicativo Android existente, com o mesmo pacote **br.com.auron**,
-Android 8.0+ (API26), **versionCode4** e **versionName0.2.1**. Esta revisão corrige
-os campos de autenticação, integra IA opcional nos dois modos, atualiza a imagem
-oficial de abertura e acrescenta as automações autorizadas da Fase 3.
-99 testes JVM e 59 testes Android16 emulado passaram, além dos testes do servidor.
-[Entrega e instalação](docs/DELIVERY-PHASE3.md) · [Resultados e limites](docs/VALIDATION.md).
-A assinatura original deve ser reutilizada para atualizar o tablet sem desinstalar.
+Continuação do aplicativo Android existente, pacote **br.com.auron**, Android8+
+(API26), **versionCode4/versionName0.2.1**. Esta revisão estabiliza o acesso por
+Supabase e a conversa quando a IA online não está configurada ou está indisponível.
+A interface, splash, voz, rotinas e versículos da entrega anterior foram preservados.
+
+**Fluxo de atualização: baixar ZIP → extrair no notebook → abrir a pasta auron no
+Android Studio → gerar APK com a chave original → atualizar o tablet → testar.**
+Não é necessário Git Pull.
+
+[Correções, configuração e instalação](docs/STABILIZATION-20261027.md) ·
+[Resultados e limites dos testes](docs/VALIDATION.md).
+Supabase ainda exige configuração do Hook/conta; IA online exige gateway/modelo.
+As respostas locais são explicitamente demonstrativas e continuam sem login.
 
 ## Implementação nesta versão
 
@@ -21,7 +27,7 @@ A assinatura original deve ser reutilizada para atualizar o tablet sem desinstal
 - Cópia manual na nuvem por HTTPS, com consentimento, consulta, exclusão, RLS e
   proteção contra revisão desatualizada. Sem restauração ou sincronização automática.
 - Central de comando e rotinas matinal/noturna preservadas; robô Canvas original
-  de corpo inteiro. A abertura usa a imagem oficial: close no peito, zoom até
+  de corpo inteiro. A abertura usa a imagem oficial: aproximação do peito seguida de afastamento para
   revelar o robô inteiro no novo fundo preto sem painéis, Pular e fade. Movimento de câmera sobre imagem 2D.
 - Tarefas, histórico e voz por toque mantidos. Seleção de voz offline pt-BR,
   teste, velocidade e tonalidade salvos por perfil; gênero depende das vozes instaladas.
@@ -106,9 +112,9 @@ node server/test/handler.test.mjs
 node docs/recovery/test/policy.test.mjs
 ```
 
-O [CI aprovado](https://github.com/guilhermesantossilva1209-stack/AURON-/actions/runs/40128363671)
+O [CI aprovado](https://github.com/guilhermesantossilva1209-stack/AURON-/actions/runs/40430241481)
 executou 9 verificações estáticas, 3 testes SQLite/ativos, 33 testes do handler,
-22 testes HTTP, 4 de recuperação, 99 JVM e 59 instrumentados no emulador Android16.
+22 testes HTTP, 4 de recuperação, 104 JVM e 73 instrumentados no emulador Android16.
 Todos passaram, assim como os testes PostgreSQL16/RLS e a compilação dos APKs.
 Lint terminou sem erros e com 18 avisos. Gradle/SDK não estão disponíveis na máquina
 local; as verificações Android foram executadas no GitHub Actions.
@@ -118,7 +124,7 @@ com a conta do proprietário. A migração e a política SQL foram verificadas n
 Supabase real, mas ativação do Hook, cadastro/login/recuperação HTTP e testes físicos
 no tablet continuam pendentes.
 [Validação e limites](docs/VALIDATION.md) · [Como retomar](docs/RESUME.md) ·
-[Relatório desta entrega](docs/DELIVERY-PHASE3.md) · [Build Android16](docs/BUILD-0.2.1.md)
+[Relatório desta entrega](docs/STABILIZATION-20261027.md) · [Build Android16](docs/BUILD-0.2.1.md)
 
 ## Comandos locais preservados
 

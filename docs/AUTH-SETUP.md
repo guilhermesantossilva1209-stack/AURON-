@@ -20,6 +20,15 @@ que a configuração foi feita, **não uma barreira de segurança**. Uma requisi
 fora do app também precisa ser recusada pelo Hook. RLS protege os dados da nuvem
 separadamente. Não habilite cadastro antes de ativar e testar essa política.
 
+## Correção de 27/10/2026
+
+A consulta atual continua mostrando zero usuários Auth e um proprietário permitido.
+O botão sem configuração agora abre **Configurar conexões**, com rótulo explícito,
+em vez de permanecer desabilitado. Com URL/chave salvas, login/cadastro continuam
+usando os endpoints reais. Os erros distinguem configuração, confirmação, política,
+credenciais, DNS, TLS e tempo limite. [Passos desta revisão](STABILIZATION-20261027.md).
+Nenhuma senha ou conta foi criada automaticamente.
+
 ## Projeto desta entrega
 
 URL pública: `https://rejecmdixeeivueqwxcz.supabase.co`.
@@ -145,8 +154,8 @@ na nuvem e pelo gateway de IA. Testar rede indisponível e configuração incorr
 fluxos externos foi realizado com uma conta real nesta entrega.
 
 Os testes Kotlin de políticas e Android de tela/Keystore passaram no
-[CI 40128363671](https://github.com/guilhermesantossilva1209-stack/AURON-/actions/runs/40128363671),
-que executou 99 testes JVM e 59 testes instrumentados no emulador Android16.
+[CI 40430241481](https://github.com/guilhermesantossilva1209-stack/AURON-/actions/runs/40430241481),
+que executou 104 testes JVM e 73 testes instrumentados no emulador Android16.
 Gradle/SDK não estão disponíveis na máquina local; essa limitação foi atendida pelo CI.
 Os quatro testes Node da política de recuperação também passaram. Esses testes
 não provam envio de e-mail, alteração real de senha nem acesso à conta do

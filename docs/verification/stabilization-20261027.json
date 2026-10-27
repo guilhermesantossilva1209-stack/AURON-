@@ -1,0 +1,60 @@
+{
+  "commit": "2a68de2dfdf8027849cfcaa4a32b2775eddfeb1e",
+  "run": 40430241481,
+  "jvm": {
+    "tests": "104",
+    "failures": "0",
+    "ignored": "0",
+    "duration": "0.612s"
+  },
+  "lint": {
+    "Error": 0,
+    "Warning": 18
+  },
+  "artifact": 12701223600,
+  "android": {
+    "counts": {
+      "tests": 73,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "classes": [
+      "br.com.auron.ai.LocalAiAccessStoreTest",
+      "br.com.auron.ai.RemoteAiTransportTest",
+      "br.com.auron.auth.AuthFlowTest",
+      "br.com.auron.auth.SessionPersistenceTest",
+      "br.com.auron.automation.AutomationControllerTest",
+      "br.com.auron.data.AuronMigrationTest",
+      "br.com.auron.data.ProfileAndMemoryPersistenceTest",
+      "br.com.auron.data.RoomRepositoryPersistenceTest",
+      "br.com.auron.data.SettingsPersistenceTest",
+      "br.com.auron.ui.AuronSmokeTest",
+      "br.com.auron.ui.AuthScreenTest",
+      "br.com.auron.ui.AutomationScreenTest",
+      "br.com.auron.ui.BibleReadingTest",
+      "br.com.auron.ui.ChatFallbackTest",
+      "br.com.auron.ui.CloudBackupScreenTest",
+      "br.com.auron.ui.ConnectionSettingsTest",
+      "br.com.auron.ui.OpeningAnimationTest",
+      "br.com.auron.voice.VoiceSettingsTest"
+    ],
+    "artifact": 12701916879
+  },
+  "node": {
+    "handler": 33,
+    "http": 22,
+    "recovery": 4
+  },
+  "static_checks": 9,
+  "offline": 3,
+  "postgres_security": "passed",
+  "local_http": "blocked EPERM; passed in CI",
+  "supabase_auth_users": 0,
+  "supabase_allowlist_owners": 1,
+  "hook_activation_verified": false,
+  "live_auth_tested": false,
+  "live_model_tested": false,
+  "physical_tablet_tested": false,
+  "signature_compared": false
+}
