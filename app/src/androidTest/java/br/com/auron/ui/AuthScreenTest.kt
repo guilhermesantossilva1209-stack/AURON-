@@ -33,7 +33,7 @@ class AuthScreenTest {
         assertEquals("owner@example.com" to " old-password ", submitted)
     }
 
-    @Test fun unconfiguredLoginAcceptsTouchAndTypingButCannotSubmitFromKeyboard() {
+    @Test fun unconfiguredLoginRoutesKeyboardAndPrimaryButtonToSetupWithoutSendingCredentials() {
         var openedConnections = false
         compose.setContent { AuronTheme { AuthScreen(AuthState(ready = true), false,
             { _, _ -> fail("Unconfigured login must not send credentials") },
@@ -47,16 +47,18 @@ class AuthScreenTest {
         compose.onNodeWithTag("auth_password").assertIsFocused().performTextInput("owner-password-only")
         compose.onNodeWithTag("auth_password").performImeAction()
         closeSoftKeyboard()
-        compose.onNodeWithTag("auth_submit").performScrollTo().assertIsNotEnabled()
-        compose.onNodeWithTag("auth_configure_service").performScrollTo().assertIsEnabled().performClick()
+        assertTrue(openedConnections)
+        openedConnections = false
+        compose.onNodeWithTag("auth_submit").performScrollTo().assertIsEnabled().assertTextContains("Configurar para entrar").performClick()
         assertTrue(openedConnections)
     }
 
     @Test fun unconfiguredOwnerRegistrationAllowsAllFieldsWithoutSendingCredentials() {
+        var openedConnections = 0
         compose.setContent { AuronTheme { AuthScreen(AuthState(ready = true), false,
             { _, _ -> fail("Unconfigured login must not send credentials") },
             { _, _ -> fail("Unconfigured registration must not send credentials") },
-            { fail("Unconfigured recovery must not send an email") }, {}, {}) } }
+            { fail("Unconfigured recovery must not send an email") }, {}, { openedConnections++ }) } }
         compose.onNodeWithText("Primeiro acesso do proprietário").performScrollTo().performClick()
         compose.onNodeWithTag("auth_email").performScrollTo().performClick().assertIsFocused()
             .performTextInput("owner@example.com")
@@ -68,21 +70,24 @@ class AuthScreenTest {
         closeSoftKeyboard()
         compose.onNodeWithTag("auth_owner_policy_confirmed").performScrollTo().performClick()
         compose.onNodeWithTag("auth_registration_consent").performScrollTo().performClick()
-        compose.onNodeWithTag("auth_submit").performScrollTo().assertIsNotEnabled()
+        compose.onNodeWithTag("auth_submit").performScrollTo().assertIsEnabled().assertTextContains("Configurar para criar conta").performClick()
+        assertEquals(2, openedConnections)
         compose.onNodeWithTag("auth_configure_service").performScrollTo().assertIsDisplayed()
     }
 
     @Test fun unconfiguredRecoveryRemainsEditableWithoutSendingRequests() {
+        var openedConnections = false
         compose.setContent { AuronTheme { AuthScreen(AuthState(ready = true), false,
             { _, _ -> fail("Must not login") }, { _, _ -> fail("Must not register") },
-            { fail("Unconfigured recovery must not send an email") }, {}, {}) } }
+            { fail("Unconfigured recovery must not send an email") }, {}, { openedConnections = true }) } }
         compose.onNodeWithText("Esqueci minha senha").performScrollTo().performClick()
         compose.onNodeWithTag("auth_email").performScrollTo().assertIsEnabled().performClick().assertIsFocused()
             .performTextInput("owner@example.com")
         compose.onNodeWithTag("auth_email").performImeAction()
         closeSoftKeyboard()
         compose.onNodeWithTag("auth_password").assertDoesNotExist()
-        compose.onNodeWithTag("auth_submit").performScrollTo().assertIsNotEnabled()
+        compose.onNodeWithTag("auth_submit").performScrollTo().assertIsEnabled().assertTextContains("Configurar recuperação")
+        assertTrue(openedConnections)
     }
 
     @Test fun activeRequestPreventsDuplicateSubmissionsAndEditing() {
@@ -99,7 +104,7 @@ class AuthScreenTest {
         compose.setContent { AuronTheme { AuthScreen(AuthState(ready = true), false,
             { _, _ -> fail("Must not login") }, { _, _ -> fail("Must not register") },
             { fail("Must not reset") }, { local = true }, {}) } }
-        compose.onNodeWithTag("auth_submit").performScrollTo().assertIsNotEnabled()
+        compose.onNodeWithTag("auth_submit").performScrollTo().assertIsEnabled().performClick()
         compose.onNodeWithTag("auth_local").performScrollTo().performClick()
         assertTrue(local)
     }

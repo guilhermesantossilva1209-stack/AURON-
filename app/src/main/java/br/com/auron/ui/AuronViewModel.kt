@@ -130,10 +130,14 @@ class AuronViewModel(application: Application) : AndroidViewModel(application) {
         }
         viewModelScope.launch {
             auth.config.map { it.aiBaseUrl }.distinctUntilChanged().collect { url ->
+                _state.update { current -> current.copy(aiStatus = when {
+                    !current.settings.useRemoteAi -> "Demonstração local"
+                    url.isBlank() -> "Modo local · IA online não configurada"
+                    else -> "Aguardando solicitação"
+                }) }
                 localAiMutex.withLock {
                     _localAiConfigured.value = withContext(Dispatchers.IO) { runCatching { localAiAccess.read(url) != null }.getOrDefault(false) }
                 }
-                _state.update { current -> current.copy(aiStatus = if (current.settings.useRemoteAi) "Aguardando solicitação" else "Demonstração local") }
             }
         }
     }
@@ -163,6 +167,7 @@ class AuronViewModel(application: Application) : AndroidViewModel(application) {
                         memories = data.memories, memoryError = data.memoryError, readings = data.readings,
                         aiStatus = when {
                             !data.settings.useRemoteAi -> "Demonstração local"
+                            auth.config.value.aiBaseUrl.isBlank() -> "Modo local · IA online não configurada"
                             previous.aiStatus == "Demonstração local" -> "Aguardando solicitação"
                             else -> previous.aiStatus
                         }
@@ -421,9 +426,9 @@ class AuronViewModel(application: Application) : AndroidViewModel(application) {
         val remote = command == LocalCommand.Unknown && settings.useRemoteAi
         var responseSource = if (command == LocalCommand.Unknown || command == LocalCommand.Help) "demo" else "system"
         val reply = if (remote) {
-            _state.update { it.copy(aiStatus = "Consultando IA…") }
             val config = auth.config.value
-            val response = if (config.aiBaseUrl.isBlank()) ProviderResult.Unavailable("Configure o endereço HTTPS do servidor de IA.")
+            _state.update { it.copy(aiStatus = if (config.aiBaseUrl.isBlank()) "Modo local · IA online não configurada" else "Consultando IA…") }
+            val response = if (config.aiBaseUrl.isBlank()) ProviderResult.Unavailable("Nenhum servidor de IA foi configurado. Em Configurar conexões, informe a URL HTTPS de um gateway AURON com modelo disponível. A URL do Supabase não substitui esse servidor.")
             else if (settings.memoryEnabled && settings.shareMemoryWithAi && _state.value.memoryError != null) ProviderResult.Unavailable("A memória não pôde ser aberta. Desative seu compartilhamento para conversar sem ela.")
             else RemoteAiProvider(config.aiBaseUrl, if (id == "local") AiAccessMode.LocalGateway else AiAccessMode.SupabaseSession) {
                 requireCurrent(this)
@@ -445,9 +450,16 @@ class AuronViewModel(application: Application) : AndroidViewModel(application) {
                     response.text
                 }
                 is ProviderResult.Unavailable -> {
-                    responseSource = "error"
-                    _state.update { it.copy(aiStatus = "IA indisponível") }
-                    "IA indisponível: ${response.reason} Tarefas e rotinas locais continuam disponíveis. Envie novamente para tentar reconectar."
+                    // A remote failure must not disable the existing offline assistant.
+                    // The source and text explicitly identify deterministic local output;
+                    // this is not reported as a successful model response.
+                    responseSource = "demo"
+                    _state.update { it.copy(aiStatus = if (config.aiBaseUrl.isBlank()) "Modo local · IA online não configurada" else "Modo local · IA online indisponível") }
+                    val localReply = when (val local = provider.reply(input, settings)) {
+                        is ProviderResult.Success -> local.text
+                        is ProviderResult.Unavailable -> "Modo local: tarefas, rotinas e navegação continuam disponíveis. Digite “ajuda” para ver os comandos."
+                    }
+                    "IA online indisponível: ${response.reason}\n\n$localReply"
                 }
             }
         } else handle(command, input)

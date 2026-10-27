@@ -98,7 +98,7 @@ fun AuthScreen(
     val confirmationFocus = remember { FocusRequester() }
     // Editing the form does not contact a service. Only submission needs a ready connection.
     val editable = !state.busy
-    val canSubmit = configured && state.ready && editable
+    val canSubmit = state.ready && editable
 
     fun changePanel(next: AccessPanel) {
         focus.clearFocus()
@@ -113,6 +113,13 @@ fun AuthScreen(
 
     fun submit() {
         if (!canSubmit) return
+        if (!configured) {
+            // The primary action must explain/fix missing setup instead of silently
+            // ignoring the tap. No credentials leave this screen in this branch.
+            focus.clearFocus()
+            onConfigure()
+            return
+        }
         val address = email.trim()
         validation = when {
             !Patterns.EMAIL_ADDRESS.matcher(address).matches() -> "Digite um e-mail válido."
@@ -282,7 +289,11 @@ fun AuthScreen(
                             CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onSurface)
                             Spacer(Modifier.width(10.dp))
                         }
-                        Text(if (state.busy) "Aguarde…" else when (panel) {
+                        Text(if (state.busy) "Aguarde…" else if (!configured) when (panel) {
+                            AccessPanel.Login -> "Configurar para entrar"
+                            AccessPanel.Register -> "Configurar para criar conta"
+                            AccessPanel.Reset -> "Configurar recuperação"
+                        } else when (panel) {
                             AccessPanel.Login -> "Entrar na minha conta"
                             AccessPanel.Register -> "Criar minha conta privada"
                             AccessPanel.Reset -> "Enviar link de recuperação"

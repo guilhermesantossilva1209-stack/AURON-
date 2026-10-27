@@ -19,10 +19,13 @@ import org.json.JSONObject
 import java.util.concurrent.atomic.AtomicLong
 
 /** Global connection/session owner. Profile data is opened separately by the ViewModel. */
-class AuthManager(context: Context) {
+class AuthManager internal constructor(
+    context: Context,
+    private val client: SupabaseAuthClient,
+    private val sessions: EncryptedSessionStore,
+) {
+    constructor(context: Context) : this(context, SupabaseAuthClient(), EncryptedSessionStore(context.applicationContext))
     private val preferences = context.applicationContext.getSharedPreferences("auron.connections.v1", Context.MODE_PRIVATE)
-    private val sessions = EncryptedSessionStore(context.applicationContext)
-    private val client = SupabaseAuthClient()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val mutex = Mutex() // Login/configuration/refresh are serialized; refresh is single-flight.
     private val identityEpoch = AtomicLong(0L)
@@ -172,7 +175,7 @@ class AuthManager(context: Context) {
                     runCatching { invalidateStoredSession(local = false) }
                 } else if (!closed && epoch == identityEpoch.get()) {
                     refreshRetryAfterSeconds = System.currentTimeMillis() / 1000L + 5L
-                    mutate(epoch) { it.copy(error = "Não foi possível renovar sua sessão. Confira a conexão e tente novamente.") }
+                    mutate(epoch) { it.copy(error = (error as? AuthFailure)?.safeMessage ?: "Não foi possível renovar sua sessão. Confira a conexão e tente novamente.") }
                 }
                 null
             }
@@ -206,7 +209,7 @@ class AuthManager(context: Context) {
     }
 
     private fun requireConfigured(): ConnectionConfig = mutableConfig.value.also {
-        if (it.supabaseUrl.isBlank() || it.supabasePublishableKey.isBlank()) throw AuthFailure("Autenticação externa não configurada. Configure um projeto Supabase ou continue no modo local.")
+        if (it.supabaseUrl.isBlank() || it.supabasePublishableKey.isBlank()) throw AuthFailure("Para entrar ou criar a conta, abra Configurar conexões, preencha a Project URL e a chave pública publishable do seu Supabase e toque Salvar conexões. O modo local não exige conta.")
     }
 
     private fun acceptSession(config: ConnectionConfig, session: AuthSession, epoch: Long): Boolean {

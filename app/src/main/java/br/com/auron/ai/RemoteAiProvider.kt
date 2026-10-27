@@ -8,16 +8,20 @@ import br.com.auron.domain.ProviderResult
 import java.io.ByteArrayOutputStream
 import java.net.URI
 import java.net.SocketTimeoutException
+import java.net.UnknownHostException
+import java.net.URL
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.Future
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 import javax.net.ssl.HttpsURLConnection
+import javax.net.ssl.SSLException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeoutOrNull
 import org.json.JSONArray
+import org.json.JSONException
 import org.json.JSONObject
 import kotlin.coroutines.resume
 
@@ -25,6 +29,7 @@ import kotlin.coroutines.resume
 class RemoteAiProvider(
     val baseUrl: String,
     val accessMode: AiAccessMode = AiAccessMode.SupabaseSession,
+    private val connectionFactory: (URL) -> HttpsURLConnection = { it.openConnection() as HttpsURLConnection },
     val tokenProvider: suspend () -> String?,
 ) : AiProvider {
     override val id = if (accessMode == AiAccessMode.LocalGateway) "personal-gateway-v1" else "authenticated-remote-v1"
@@ -73,7 +78,7 @@ class RemoteAiProvider(
                 val work = executor.submit {
                     val result = try {
                         if (!continuation.isActive) return@submit
-                        val active = endpoint.openConnection() as HttpsURLConnection
+                        val active = connectionFactory(endpoint)
                         connection.set(active)
                         if (!continuation.isActive) return@submit
                         active.apply {
@@ -101,11 +106,18 @@ class RemoteAiProvider(
                                         bytes.write(buffer, 0, count)
                                     }
                                 }
-                                val answer = JSONObject(bytes.toString("UTF-8")).optString("text")
-                                if (answer.isBlank() || answer.length > 16_000) unavailable("O servidor enviou uma resposta inválida.")
+                                val answer = JSONObject(bytes.toString("UTF-8")).opt("text") as? String
+                                if (answer.isNullOrBlank() || answer.length > 16_000) unavailable("O servidor enviou uma resposta inválida.")
                                 else ProviderResult.Success(answer)
                             }
-                            401, 403 -> unavailable(accessError())
+                            401 -> unavailable(accessError())
+                            403 -> unavailable(if (accessMode == AiAccessMode.LocalGateway) {
+                                "O servidor recusou o acesso local. Confira o token pessoal e a configuração de acesso do gateway AURON."
+                            } else {
+                                "Sua conta não foi autorizada pelo servidor de IA. Confira OWNER_USER_ID e o projeto Supabase configurados no gateway AURON."
+                            })
+                            301, 302, 303, 307, 308 -> unavailable("O endereço de IA redireciona para outra página. Configure a origem HTTPS final do gateway AURON; credenciais não são enviadas a redirecionamentos.")
+                            404, 405 -> unavailable("O endereço não oferece POST /v1/chat. Configure a origem HTTPS do gateway AURON, não a URL do Supabase, do Ollama ou de uma página de login.")
                             413 -> unavailable("O servidor recusou o tamanho da mensagem ou do contexto.")
                             429 -> unavailable("Limite temporário de solicitações. Aguarde e tente novamente.")
                             502, 503, 504 -> unavailable("O modelo está indisponível ou demorou para responder. Tente novamente.")
@@ -113,6 +125,12 @@ class RemoteAiProvider(
                         }
                     } catch (_: SocketTimeoutException) {
                         unavailable("O servidor demorou para responder. Tente novamente.")
+                    } catch (_: UnknownHostException) {
+                        unavailable("Não foi possível localizar o domínio do servidor de IA. Confira a URL HTTPS, o DNS e a conexão de internet.")
+                    } catch (_: SSLException) {
+                        unavailable("A conexão HTTPS do servidor de IA não pôde ser validada. Configure um certificado válido para esse domínio; a proteção TLS permanece ativa.")
+                    } catch (_: JSONException) {
+                        unavailable("O servidor enviou uma resposta inválida. Confira se o endereço configurado corresponde ao gateway AURON.")
                     } catch (_: Exception) {
                         unavailable("Não foi possível acessar a IA. Verifique a conexão e a configuração do servidor.")
                     } finally { connection.getAndSet(null)?.disconnect() }
